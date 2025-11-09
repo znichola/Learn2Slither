@@ -23,7 +23,9 @@ public:
     // Spawns a cell of type t somewhere randomly on an Empty square
     // returns the new board and the next seed
 
-     Op randomSpawn(Cell t, unsigned seed) const;
+    Op randomSpawn(Cell t, unsigned seed) const;
+    Op randomConnectedSpawn(
+            Cell h, Cell t, unsigned length, unsigned seed) const;
 };
 
 class Pipe {

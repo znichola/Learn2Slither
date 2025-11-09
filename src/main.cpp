@@ -14,6 +14,9 @@ int main() {
     Board gen = p.pipe(board, 42, {
             Pipe::RandomSpawn{Board::Cell::Red},
             Pipe::RandomSpawn{Board::Cell::Green},
+            Pipe::RandomSpawn{Board::Cell::Green},
+            Pipe::RandomSpawn{Board::Cell::Red},
+            Pipe::RandomSpawn{Board::Cell::Head},
             Pipe::RandomSpawn{Board::Cell::Red},
             });
     std::cout << "PIPELINE\n" << gen;

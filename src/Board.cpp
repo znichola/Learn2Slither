@@ -30,9 +30,27 @@ Board::Op Board::randomSpawn(Board::Cell t, unsigned seed) const {
         }
         i++;
     }
-    auto l = candidates.size();
+    i = candidates[r() % candidates.size()];
     Board newBoard = *this;
-    newBoard.grid[l % r()] = t;
+    newBoard.grid[i] = t;
+    return {newBoard, r()};
+}
+
+Board::Op Board::randomConnectedSpawn(
+        Board::Cell h,
+        Board::Cell t,
+        unsigned length,
+        unsigned seed
+        ) const {
+    std::minstd_rand0 r (seed);
+
+
+    Board newBoard = *this;
+
+    for (unsigned i = 0; i < length; i++) {
+        std::vector<unsigned> candidates;
+    }
+
     return {newBoard, r()};
 }
 
