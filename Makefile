@@ -19,14 +19,14 @@ LEAKS_CHECK = valgrind
 
 EXAMPLE_FILE = example_file.txt
 
-FILES	= 
+FILES	= Board
 
-MAIN_SRC	= srcs/main.cpp
-MAIN_OBJ	= objs/main.o
+MAIN_SRC	= src/main.cpp
+MAIN_OBJ	= obj/main.o
 
-OBJS_PATH = objs/
-SRCS_PATH = srcs/
-INCS_PATH = includes
+OBJS_PATH = obj/
+SRCS_PATH = src/
+INCS_PATH = include
 
 SRCS	= $(addprefix $(SRCS_PATH), $(addsuffix .cpp, $(FILES)))
 OBJS	= $(addprefix $(OBJS_PATH), $(addsuffix .o, $(FILES)))
