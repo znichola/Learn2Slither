@@ -1,7 +1,7 @@
 #include <iostream>
 #include <random>
 
-#include "Board.hpp"
+#include "environment.hpp"
 
 Board::Board(unsigned int x, unsigned int y) : x_dim(x+2), y_dim(y+2) {
     for (unsigned int i = 0; i < x_dim * y_dim; i++) {

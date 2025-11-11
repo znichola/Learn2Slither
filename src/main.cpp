@@ -1,13 +1,8 @@
-#include "Board.hpp"
+#include "environment.hpp"
 #include "iostream"
 
 int main() {
     Board board = Board(10, 10);
-
-    // auto [board2, seed] = board.randomSpawn(Board::Cell::Red, 42);
-
-    // std::cout << "new Seed " << seed << "\n";
-    // std::cout << board2;
 
     Pipe p(board, {
                       Pipe::RandomSpawn{Board::Cell::Head},
