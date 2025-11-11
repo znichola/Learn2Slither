@@ -33,12 +33,13 @@ public:
     struct RandomSpawn {
         Board::Cell t;
     };
-    struct RandomChainedSpawn {
+    struct RandomConnectedSpawn {
+        Board::Cell h;
         Board::Cell t;
         unsigned length;
     };
-    struct Op : std::variant<RandomSpawn, RandomChainedSpawn> {
-        using std::variant<RandomSpawn, RandomChainedSpawn>::variant;
+    struct Op : std::variant<RandomSpawn, RandomConnectedSpawn> {
+        using std::variant<RandomSpawn, RandomConnectedSpawn>::variant;
     };
     inline static Board pipe(
             const Board & board,
@@ -53,16 +54,32 @@ public:
                 auto [newBoard, newSeed] = b.randomSpawn(_op.t, s);
                 b = newBoard;
                 s = newSeed;
+            } else if (std::holds_alternative<RandomConnectedSpawn>(op)) {
+                const auto &_op = std::get<RandomConnectedSpawn>(op);
+                auto [newBoard, newSeed] = b.randomConnectedSpawn(
+                        _op.h, _op.t, _op.length, s);
+                b = newBoard;
+                s = newSeed;
             }
         }
         return b;
+    }
+
+    Board _board;
+    std::vector<Op> _pipeline;
+
+    inline Pipe(const Board & board, const std::vector<Op> &pipeline)
+        : _board(board), _pipeline(pipeline) {}
+
+    inline Board genBoard(unsigned seed) const {
+        return pipe(_board, seed, _pipeline);
     }
 };
 
 
 inline std::ostream& operator<<(std::ostream& os, const Board::Cell c) {
     switch (c) {
-        case Board::Cell::Empty: os << "0"; break;
+        case Board::Cell::Empty: os << " "; break;
         case Board::Cell::Wall: os << "W"; break;
         case Board::Cell::Head: os << "H"; break;
         case Board::Cell::Snake: os << "S"; break;
