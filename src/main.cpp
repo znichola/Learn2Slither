@@ -1,5 +1,7 @@
-#include "environment.hpp"
 #include "iostream"
+
+#include "environment.hpp"
+#include "interpreter.hpp"
 
 int main() {
     Board board = Board(10, 10);
@@ -15,6 +17,7 @@ int main() {
 
     for (unsigned i = 0; i < 10; i++) {
         auto gen = p.genBoard(i);
-        std::cout << "SEED " << i << "\n" << gen;
+        auto vision = Vision(gen);
+        std::cout << "SEED " << i << "\n" << gen << "\nVISION\n" << vision;
     }
 }

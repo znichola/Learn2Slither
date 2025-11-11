@@ -12,7 +12,7 @@ public:
 
     unsigned int x_dim = 10;
     unsigned int y_dim = 10;
-    std::vector<Cell> grid;
+    std::vector<Cell> _grid;
 
     Board(unsigned int x, unsigned int y);
 
@@ -91,7 +91,7 @@ inline std::ostream& operator<<(std::ostream& os, const Board::Cell c) {
 
 inline std::ostream& operator<<(std::ostream& os, const Board& b) {
     int i = 0;
-    for (const auto cell : b.grid) {
+    for (const auto cell : b._grid) {
         os << cell;
         if ((i + 1) % b.x_dim == 0) {
             os << "\n";
