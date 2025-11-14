@@ -77,3 +77,30 @@ inline std::ostream& operator<<(std::ostream& os, const Vision v) {
     }
     return os;
 }
+
+class Action {
+public:
+    enum class Move {Up, Down, Left, Right};
+
+    // Action constructor will take as atgument the Q function?
+    // or whatever huristic is being used
+
+    Move move(const Vision &vision) const;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const Action::Move m) {
+    switch (m) {
+        case Action::Move::Up:    os << "UP";    break;
+        case Action::Move::Down:  os << "DOWN";  break;
+        case Action::Move::Left:  os << "LEFT";  break;
+        case Action::Move::Right: os << "RIGHT"; break;
+    }
+    return os;
+}
+
+void loop();
+
+/* The Agent makes actions, which produce moves, these moves are fed into a 
+ * 
+ * */
+

@@ -15,9 +15,11 @@ int main() {
                       Pipe::RandomSpawn{Board::Cell::Green},
                   });
 
-    for (unsigned i = 0; i < 10; i++) {
+    for (unsigned i = 0; i < 0; i++) {
         auto gen = p.genBoard(i);
         auto vision = Vision(gen);
         std::cout << "SEED " << i << "\n" << gen << "\nVISION\n" << vision;
     }
+
+    loop();
 }
