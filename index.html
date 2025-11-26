@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Snake WASM Output</title>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #terminal {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            min-height: 200px;
+            box-shadow: 0 0 10px #000;
+        }
+    </style>
+</head>
+<body>
+    <h2>Snake WASM Output</h2>
+    <div id="terminal">Loading WebAssembly…</div>
+
+    <script type="module">
+        import createModule from "./snake.js";
+
+        const term = document.getElementById("terminal");
+
+        function print(text) {
+            term.textContent += text + "\n";
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Start the WASM module
+        createModule({
+            print: print,
+            printErr: (t) => print("[ERR] " + t)
+        }).then((Module) => {
+            term.textContent = "";       // Clear the "Loading" message
+            Module.callMain([]);         // Run your main()
+        });
+    </script>
+</body>
+</html>
+
