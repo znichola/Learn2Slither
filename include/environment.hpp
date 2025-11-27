@@ -11,6 +11,7 @@ class Board {
 public:
     enum class Cell {Empty, Wall, Head, Snake, Green, Red};
     typedef std::pair<Board, unsigned> Op;
+    typedef std::pair<Board, MoveRes> State;
 
     unsigned int x_dim = 10;
     unsigned int y_dim = 10;
@@ -30,7 +31,8 @@ public:
     Op randomConnectedSpawn(
             Cell h, Cell t, unsigned length, unsigned seed, bool asSnake) const;
 
-    std::pair<Board, MoveRes> doMove(Move m) const;
+    State doMove(Move m) const;
+    float reward(MoveRes) const;
 
     unsigned snakeLength() const;
 };

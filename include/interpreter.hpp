@@ -5,6 +5,10 @@
 
 #include "environment.hpp"
 
+float reward(MoveRes);
+
+void loop();
+
 class Vision {
 public:
     std::vector<Board::Cell> _north;
@@ -78,11 +82,4 @@ inline std::ostream& operator<<(std::ostream& os, const Vision v) {
     }
     return os;
 }
-
-
-void loop();
-
-/* The Agent makes actions, which produce moves, these moves are fed into a 
- * 
- * */
 

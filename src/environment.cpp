@@ -90,7 +90,7 @@ void printSnake(std::vector<unsigned> s) {
     std::cout << "}\n";
 }
 
-std::pair<Board, MoveRes> Board::doMove(Move m) const {
+Board::State Board::doMove(Move m) const {
     if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
 
     Board b = *this;
