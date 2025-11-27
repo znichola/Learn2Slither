@@ -120,11 +120,17 @@ std::pair<Board, MoveRes> Board::doMove(Move m) const {
 
     b._grid[head] = Cell::Snake;
     b._grid[newHead] = Cell::Head;
+    b._snake.push_back(newHead);
     if (moveRes != MoveRes::Green) {
         b._snake.erase(b._snake.begin());
         b._grid[tail] = Cell::Empty;
     }
-    b._snake.push_back(newHead);
+    if (moveRes == MoveRes::Red && b.snakeLength() != 0) {
+        b._grid[b._snake.front()] = Cell::Empty;
+        b._snake.erase(b._snake.begin());
+    }
+    if (b.snakeLength() == 0) moveRes = MoveRes::Death;
+
     return {b, moveRes};
 }
 

@@ -1,8 +1,10 @@
+#include <ranges>
+
 #include "environment.hpp"
 #include "interpreter.hpp"
 #include "snapshot.hpp"
 
-void vision();
+void move();
 
 int ret = 0;
 
@@ -10,7 +12,7 @@ int main() {
     std::cout << "Testing Environment\n";
     std::cout << "===================\n";
 
-    vision();
+    move();
 
     return ret;
 }
@@ -47,20 +49,51 @@ void extracted(int seed, Board board, Move move) {
     }
 }
 
-void vision() {
-  Pipe p(Board(10, 10), {
-                            Pipe::RandomSpawn{Board::Cell::Head},
-                            Pipe::RandomConnectedSpawn{Board::Cell::Head,
-                                                       Board::Cell::Snake, 2},
-                            Pipe::RandomSpawn{Board::Cell::Red},
-                            Pipe::RandomSpawn{Board::Cell::Green},
-                            Pipe::RandomSpawn{Board::Cell::Green},
-                        });
+void move() {
+    Pipe p(Board(10, 10), {
+            Pipe::RandomSpawn{Board::Cell::Head},
+            Pipe::RandomConnectedSpawn{Board::Cell::Head,
+                Board::Cell::Snake, 2},
+            Pipe::RandomSpawn{Board::Cell::Red},
+            Pipe::RandomSpawn{Board::Cell::Green},
+            Pipe::RandomSpawn{Board::Cell::Green},
+            });
 
-  auto seed = 42;
-  auto board = p.genBoard(seed);
-  extracted(seed, board, Move::Left);
-  extracted(seed, board, Move::Right);
-  extracted(seed, board, Move::Up);
-  extracted(seed, board, Move::Down);
+    auto seed = 42;
+    auto board = p.genBoard(seed);
+    extracted(seed, board, Move::Left);
+    extracted(seed, board, Move::Right);
+    extracted(seed, board, Move::Up);
+    extracted(seed, board, Move::Down);
+    auto moves = {
+        Move::Left, Move::Left, Move::Left, Move::Left,
+        Move::Up, Move::Up, Move::Up, Move::Up, Move::Up
+        };
+    auto expected_res = {
+        MoveRes::Advance, MoveRes::Green, MoveRes::Advance, MoveRes::Advance,
+        MoveRes::Advance, MoveRes::Advance, MoveRes::Advance, MoveRes::Advance,
+        MoveRes::Red
+    };
+
+    auto it1 = moves.begin();
+    auto it2 = expected_res.begin();
+    for (; it1 != moves.end() && it2 != expected_res.end(); ++it1, ++it2) {
+        auto m = *it1;
+        auto e = *it2;
+        auto [b, r] = board.doMove(m);
+        board = b;
+        //std::cout << "RES: " << r <<  "\n" << board << "\n";
+        assert(r == e && "Move res does not match expected");
+    }
+    assert(board.snakeLength() == 3 && "Shorter after each red apple");
+    std::stringstream out;
+    out << "BOARD:\n" << board << "\n";
+    auto name = "Custom_red_apple_path";
+    auto res = snapshot::test(name, out.str());
+    if (res == snapshot::Res::Pass) {
+        std::cout << "[OK] " << name << "\n";
+    } else {
+        ret = 1;
+    }
 }
+

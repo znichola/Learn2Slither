@@ -33,6 +33,4 @@ int main() {
         std::cout << "Move result: " << res.second << "\n";
         std::cout << "Next:\n" << next << "\n";
     }
-
-    //loop();
 }
