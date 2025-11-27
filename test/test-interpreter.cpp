@@ -4,13 +4,15 @@
 
 void vision();
 
+int ret = 0;
+
 int main() {
     std::cout << "Testing Interpreter\n";
     std::cout << "===================\n";
 
     vision();
 
-    return 0;
+    return ret;
 }
 
 void vision() {
@@ -43,7 +45,11 @@ void vision() {
             << "BOARD:\n" << board << "\n"
             << "VISION\n" << vision << "\n";
 
-        snapshot::test(name.str(), out.str());
-        std::cout << "[OK] " <<  name.str() << "\n";
+        auto res = snapshot::test(name.str(), out.str());
+        if (res == snapshot::Res::Pass) {
+            std::cout << "[OK] " <<  name.str() << "\n";
+        } else {
+            ret = 1;
+        }
     }
 }

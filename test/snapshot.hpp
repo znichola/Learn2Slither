@@ -55,30 +55,31 @@ inline void printDiff(const std::string &expected, const std::string &output) {
     std::cerr << "-----------------------------------------\n";
 }
 
-inline void test(
-        std::string snapshotPath,
-        const std::string &output,
-        bool yesAssert = false
-        ) {
+enum class Res {Pass, Fail, Created};
 
-    snapshotPath = "test/snapshots/" + snapshotPath;
-    auto dir = std::filesystem::path(snapshotPath).parent_path();
-    if (!dir.empty())
-        ensureDirectory(dir.string());
+inline Res test(std::string snapshotPath, const std::string &output,
+                bool yesAssert = false) {
 
-    // If snapshot doesn't exist, create it
-    if (!std::filesystem::exists(snapshotPath)) {
-        std::cout << "[SNAPSHOT] Creating snapshot: " << snapshotPath << "\n";
-        writeFile(snapshotPath, output);
-        return;
-    }
+  snapshotPath = "test/snapshots/" + snapshotPath;
+  auto dir = std::filesystem::path(snapshotPath).parent_path();
+  if (!dir.empty())
+    ensureDirectory(dir.string());
 
-    std::string expected = loadFile(snapshotPath);
-    if (expected != output) {
-        std::cerr << "[KO : SNAPSHOT MISMATCH] " << snapshotPath << "\n";
-        printDiff(expected, output);
-        if (yesAssert) assert(false && "Snapshot mismatch");
-    }
+  // If snapshot doesn't exist, create it
+  if (!std::filesystem::exists(snapshotPath)) {
+    std::cout << "[SNAPSHOT] Creating snapshot: " << snapshotPath << "\n";
+    writeFile(snapshotPath, output);
+    return Res::Created;
+  }
+
+  std::string expected = loadFile(snapshotPath);
+  if (expected != output) {
+    std::cerr << "[KO : SNAPSHOT MISMATCH] " << snapshotPath << "\n";
+    printDiff(expected, output);
+    if (yesAssert)
+      assert(false && "Snapshot mismatch");
+    return Res::Fail;
+  }
+  return Res::Pass;
 }
-
 }

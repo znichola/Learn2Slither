@@ -89,10 +89,12 @@ test-clean:
 
 test: $(TEST_BINS)
 	@echo "Running all tests..."
-	@for t in $(TEST_BINS); do \
+	@fail = 0; \
+	for t in $(TEST_BINS); do \
 		echo "==> Running $$t"; \
-		./$$t; echo; \
-	done
+		./$$t || fail=1; echo; \
+	done; \
+	exit $$fail
 
 .PHONY: test-clean test
 
