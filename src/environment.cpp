@@ -20,7 +20,7 @@ Board::Board(unsigned int x, unsigned int y) : x_dim(x+2), y_dim(y+2) {
     }
 }
 
-Board::Op Board::randomSpawn(Board::Cell t, unsigned seed) const {
+Board::Op Board::randomSpawn(Cell t, unsigned seed) const {
     std::minstd_rand0 r (seed);
 
     std::vector<unsigned> candidates;
@@ -34,6 +34,9 @@ Board::Op Board::randomSpawn(Board::Cell t, unsigned seed) const {
     i = candidates[r() % candidates.size()];
     Board newBoard = *this;
     newBoard._grid[i] = t;
+    if (t == Cell::Head) {
+        newBoard._snake.push_back(i);
+    }
     return {newBoard, r()};
 }
 
@@ -41,7 +44,8 @@ Board::Op Board::randomConnectedSpawn(
         Board::Cell h,
         Board::Cell t,
         unsigned length,
-        unsigned seed
+        unsigned seed,
+        bool asSnake
         ) const {
     std::minstd_rand0 r (seed);
 
@@ -68,6 +72,9 @@ Board::Op Board::randomConnectedSpawn(
         }
         newBoard._grid[head] = t;
         auto index = candidates[r() % candidates.size()];
+        if (asSnake) {
+            newBoard._snake.push_back(index);
+        }
         newBoard._grid[index] = h;
         head = index;
     }
@@ -75,9 +82,80 @@ Board::Op Board::randomConnectedSpawn(
     return {newBoard, r()};
 }
 
-Board pipe(auto ops) {
-    for (const auto &op : ops) {
-        std::cout << op << "\n";
+void printSnake(std::vector<unsigned> s) {
+    std::cout << "{";
+    for (auto i : s) {
+        std::cout << i << ", ";
     }
-    return Board(10, 10);
+    std::cout << "}\n";
+}
+
+std::pair<Board, MoveRes> Board::doMove(Move m) const {
+    if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
+
+    Board b = *this;
+
+    std::cout << "Print snake: ";
+    printSnake(b._snake);
+
+    std::cout << "Print snake values : ";
+    for (auto i : b._snake) {
+        std::cout << b._grid[i] << ", ";
+    }
+    std::cout << "\n";
+
+    unsigned head = b._snake.back();
+    unsigned tail = b._snake.front();
+
+    long newHead = 0;
+    switch (m) {
+        case Move::Up:    newHead = head - b.x_dim; break;
+        case Move::Down:  newHead = head + b.x_dim; break;
+        case Move::Left:  newHead = head - 1;       break;
+        case Move::Right: newHead = head + 1;       break;
+    }
+    if (newHead < 0) throw std::runtime_error("no negative head");
+
+    MoveRes moveRes = MoveRes::Advance;
+    switch (b._grid[newHead]) {
+        case Cell::Wall:  moveRes = MoveRes::Death; break;
+        case Cell::Snake: moveRes = MoveRes::Death; break;
+        case Cell::Empty: moveRes = MoveRes::Advance; break;
+        case Cell::Green: moveRes = MoveRes::Green; break;
+        case Cell::Red:   moveRes = MoveRes::Red; break;
+        case Cell::Head:  throw std::runtime_error("Cannot move onto head");
+    }
+
+    b._grid[head] = Cell::Snake;
+    b._grid[newHead] = Cell::Head;
+    if (moveRes != MoveRes::Green) {
+        b._snake.erase(b._snake.begin());
+        b._grid[tail] = Cell::Empty;
+    }
+    b._snake.push_back(newHead);
+    return {b, moveRes};
+}
+
+unsigned Board::snakeLength() const {
+    return _snake.size();
+}
+
+Board Pipe::pipe(const Board &board, unsigned seed, std::vector<Op> ops) {
+  Board b = board;
+  unsigned s = seed;
+  for (const Op &op : ops) {
+    if (std::holds_alternative<RandomSpawn>(op)) {
+      const auto &_op = std::get<RandomSpawn>(op);
+      auto [newBoard, newSeed] = b.randomSpawn(_op.t, s);
+      b = newBoard;
+      s = newSeed;
+    } else if (std::holds_alternative<RandomConnectedSpawn>(op)) {
+      const auto &_op = std::get<RandomConnectedSpawn>(op);
+      auto [newBoard, newSeed] =
+          b.randomConnectedSpawn(_op.h, _op.t, _op.length, s, true);
+      b = newBoard;
+      s = newSeed;
+    }
+  }
+  return b;
 }

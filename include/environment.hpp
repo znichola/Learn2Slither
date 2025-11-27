@@ -5,6 +5,8 @@
 #include <utility>
 #include <variant>
 
+#include "move.hpp"
+
 class Board {
 public:
     enum class Cell {Empty, Wall, Head, Snake, Green, Red};
@@ -13,8 +15,9 @@ public:
     unsigned int x_dim = 10;
     unsigned int y_dim = 10;
     std::vector<Cell> _grid;
+    std::vector<unsigned> _snake;
 
-    Board(unsigned int x, unsigned int y);
+    Board(unsigned x, unsigned y);
 
     // Board& operator=(Board &b) const = default;
 
@@ -25,7 +28,11 @@ public:
 
     Op randomSpawn(Cell t, unsigned seed) const;
     Op randomConnectedSpawn(
-            Cell h, Cell t, unsigned length, unsigned seed) const;
+            Cell h, Cell t, unsigned length, unsigned seed, bool asSnake) const;
+
+    std::pair<Board, MoveRes> doMove(Move m) const;
+
+    unsigned snakeLength() const;
 };
 
 class Pipe {
@@ -41,29 +48,7 @@ public:
     struct Op : std::variant<RandomSpawn, RandomConnectedSpawn> {
         using std::variant<RandomSpawn, RandomConnectedSpawn>::variant;
     };
-    inline static Board pipe(
-            const Board & board,
-            unsigned seed,
-            std::vector<Op> ops
-            ) {
-        Board b = board; // TODO : switch to using ref
-        unsigned s = seed;
-        for (const Op & op : ops) {
-            if (std::holds_alternative<RandomSpawn>(op)) {
-                const auto &_op = std::get<RandomSpawn>(op);
-                auto [newBoard, newSeed] = b.randomSpawn(_op.t, s);
-                b = newBoard;
-                s = newSeed;
-            } else if (std::holds_alternative<RandomConnectedSpawn>(op)) {
-                const auto &_op = std::get<RandomConnectedSpawn>(op);
-                auto [newBoard, newSeed] = b.randomConnectedSpawn(
-                        _op.h, _op.t, _op.length, s);
-                b = newBoard;
-                s = newSeed;
-            }
-        }
-        return b;
-    }
+    static Board pipe(const Board &board, unsigned seed, std::vector<Op> ops);
 
     Board _board;
     std::vector<Op> _pipeline;

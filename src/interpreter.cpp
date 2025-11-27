@@ -1,9 +1,5 @@
 #include "interpreter.hpp"
 
-Action::Move Action::move(const Vision &vision) const {
-    (void)vision;
-    return Action::Move::Up;
-}
 
 void loop() {
     Board board = Board(10, 10);

@@ -9,7 +9,7 @@ int main() {
     Pipe p(board, {
                       Pipe::RandomSpawn{Board::Cell::Head},
                       Pipe::RandomConnectedSpawn{
-                        Board::Cell::Head, Board::Cell::Snake, 2},
+                      Board::Cell::Head, Board::Cell::Snake, 2},
                       Pipe::RandomSpawn{Board::Cell::Red},
                       Pipe::RandomSpawn{Board::Cell::Green},
                       Pipe::RandomSpawn{Board::Cell::Green},
@@ -21,5 +21,18 @@ int main() {
         std::cout << "SEED " << i << "\n" << gen << "\nVISION\n" << vision;
     }
 
-    loop();
+    Board start = p.genBoard(42);
+
+
+    std::cout << "Start:\n" << start << "\n";
+
+    Board next = start;
+    for (int i = 0; i < 3; i++) {
+        auto res = next.doMove(Move::Left);
+        next = res.first;
+        std::cout << "Move result: " << res.second << "\n";
+        std::cout << "Next:\n" << next << "\n";
+    }
+
+    //loop();
 }
