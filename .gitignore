@@ -9,3 +9,4 @@ snake.wasm
 
 #test
 test-*
+!test-*.cpp
