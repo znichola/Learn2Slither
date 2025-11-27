@@ -6,3 +6,6 @@ snake
 # wasm
 snake.js
 snake.wasm
+
+#test
+test-*

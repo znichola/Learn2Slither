@@ -3,7 +3,6 @@
 # ============================================================================
 
 NAME    = snake
-LIBNAME = libsnake.a
 
 CC      = clang++
 CFLAGS  = -Wall -Wextra
@@ -49,8 +48,8 @@ $(NAME): $(OBJS) $(MAIN_OBJ)
 clean:
 	-rm $(OBJS) $(MAIN_OBJ)
 
-fclean: clean wasm-clean
-	-rm $(NAME) $(LIBNAME)
+fclean: clean wasm-clean test-clean
+	-rm $(NAME)
 
 re: fclean all
 
@@ -60,12 +59,39 @@ leaks: re
 run: all
 	$(LEAKS_CHECK) ./$(NAME) $(EXAMPLE_FILE)
 
-# Static library
-$(LIBNAME): $(OBJS)
-	ar rcs $(LIBNAME) $(OBJS)
-
-
 .PHONY: all clean fclean re leaks run
+
+
+# ============================================================================
+#   Test Setup
+# ============================================================================
+
+TEST_DIR       = test/
+TEST_OBJS_PATH = test/$(OBJS_PATH)
+TEST_FILES     = interpreter
+
+TEST_OBJS = $(addprefix $(TEST_DIR)obj/test-, $(addsuffix .o, $(TEST_FILES)))
+TEST_BINS = $(addprefix test-, $(TEST_FILES))
+
+$(TEST_OBJS_PATH)%.o: $(TEST_DIR)%.cpp
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(BUILD_INFO) -c -I$(INCS_PATH) -o $@ $<
+
+test-interpreter: $(TEST_OBJS_PATH)test-interpreter.o $(OBJS)
+	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
+
+test-clean:
+	rm $(TEST_OBJS)
+	rm $(TEST_BINS)
+
+test: $(TEST_BINS)
+	@echo "Running all tests..."
+	@for t in $(TEST_BINS); do \
+		echo "==> Running $$t"; \
+		./$$t; \
+	done
+
+.PHONY: test-clean test
 
 # ============================================================================
 #   WebAssembly Build (emscripten w/ docker)
