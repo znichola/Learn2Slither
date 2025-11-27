@@ -27,8 +27,8 @@ int main() {
     std::cout << "Start:\n" << start << "\n";
 
     Board next = start;
-    for (int i = 0; i < 3; i++) {
-        auto res = next.doMove(Move::Left);
+    for (int i = 0; i < 6; i++) {
+        auto res = next.doMove(Move::Down);
         next = res.first;
         std::cout << "Move result: " << res.second << "\n";
         std::cout << "Next:\n" << next << "\n";

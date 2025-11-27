@@ -95,15 +95,6 @@ std::pair<Board, MoveRes> Board::doMove(Move m) const {
 
     Board b = *this;
 
-    std::cout << "Print snake: ";
-    printSnake(b._snake);
-
-    std::cout << "Print snake values : ";
-    for (auto i : b._snake) {
-        std::cout << b._grid[i] << ", ";
-    }
-    std::cout << "\n";
-
     unsigned head = b._snake.back();
     unsigned tail = b._snake.front();
 
@@ -114,7 +105,8 @@ std::pair<Board, MoveRes> Board::doMove(Move m) const {
         case Move::Left:  newHead = head - 1;       break;
         case Move::Right: newHead = head + 1;       break;
     }
-    if (newHead < 0) throw std::runtime_error("no negative head");
+    if (newHead < 0 || newHead >= static_cast<long>(b._grid.size()))
+        throw std::runtime_error("NewHead out of range");
 
     MoveRes moveRes = MoveRes::Advance;
     switch (b._grid[newHead]) {

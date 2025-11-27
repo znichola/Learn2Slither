@@ -68,7 +68,7 @@ run: all
 
 TEST_DIR       = test/
 TEST_OBJS_PATH = test/$(OBJS_PATH)
-TEST_FILES     = interpreter
+TEST_FILES     = environment interpreter
 
 TEST_OBJS = $(addprefix $(TEST_DIR)obj/test-, $(addsuffix .o, $(TEST_FILES)))
 TEST_BINS = $(addprefix test-, $(TEST_FILES))
@@ -80,6 +80,9 @@ $(TEST_OBJS_PATH)%.o: $(TEST_DIR)%.cpp
 test-interpreter: $(TEST_OBJS_PATH)test-interpreter.o $(OBJS)
 	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
 
+test-environment: $(TEST_OBJS_PATH)test-environment.o $(OBJS)
+	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
+
 test-clean:
 	rm $(TEST_OBJS)
 	rm $(TEST_BINS)
@@ -88,7 +91,7 @@ test: $(TEST_BINS)
 	@echo "Running all tests..."
 	@for t in $(TEST_BINS); do \
 		echo "==> Running $$t"; \
-		./$$t; \
+		./$$t; echo; \
 	done
 
 .PHONY: test-clean test
