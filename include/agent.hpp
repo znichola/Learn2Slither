@@ -1,29 +1,34 @@
 #pragma once
 
-#include <map>
+#include <unordered_map>
 #include <string>
+#include <random>
 
 #include "interpreter.hpp"
 #include "move.hpp"
 
 class Agent {
 public:
-    typedef std::string State;
-    const Move actions_key[4] = {
+    static constexpr int NUM_ACTIONS = 4;
+    static constexpr Move actions_key[NUM_ACTIONS] = {
         Move::Up, Move::Down, Move::Left, Move::Right
     };
 
+    std::unordered_map<State, std::array<float, 4>, State::Hash> q_table;
+
     // Values for updating the Q function
-    float learning_rate = 0;
-    float discount_factor = 0.9;
-    float current_q = 0;
-    unsigned iteration = 0;
+    float alpha = 0.4f;       // learning rate : 0 < a <= 1
+    float gamma = 0.9f;       // discount factor : 0 < g <= 1
+    float epsilon = 0.1f;     // exploration random probability
+    unsigned max_iter = 1000; // to combat infinate loops
+    unsigned _iteration = 0;
 
-    // state to reward (using action map)
-    std::map<State, int[4]> q_table;
+    // Random for epsilon greedy
+    std::mt19937 rng{std::random_device{}()};
 
-    Move decideOnAction(Vision vision) const;
+    Move decideOnAction(const Vision & vision);
 
-    void updateQtable(Vision vision, int reward);
+    void updateQtable(const Vision &vision, Move move, float reward,
+                      const State &next_state);
 };
 
