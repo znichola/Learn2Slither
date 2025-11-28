@@ -102,12 +102,34 @@ test: $(TEST_BINS)
 .PHONY: test-clean test
 
 # ============================================================================
+#  Elm app and ui
+# ============================================================================
+
+ELM_NAME=elm.js
+
+deps/elm:
+	mkdir -p deps && cd deps \
+	&& curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz \
+	&& gzip -d elm.gz \
+	&& chmod +x elm
+
+elm.js: elm/Main.elm
+	cd elm && ../deps/elm make Main.elm --output=../elm.js
+
+elm-clean:
+	rm elm.js
+
+.PHONY: elm-clean
+
+# ============================================================================
 #   WebAssembly Build (emscripten w/ docker)
 # ============================================================================
 
 EMCC_DOCKER_IMG = emscripten/emsdk
 
-wasm:
+WASM_NAME=$(NAME).js
+
+$(WASM_NAME) : $(OBJS)
 	docker run --rm -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) \
 		em++ -Wall -Wextra -Werror -std=c++20 \
 		-s WASM=1 \
@@ -116,14 +138,15 @@ wasm:
 		-s ENVIRONMENT=web \
 		-s ALLOW_MEMORY_GROWTH=1 \
 		-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain'] \
+		-s NO_DISABLE_EXCEPTION_CATCHING \
 		$(BUILD_INFO) \
 		-I$(INCS_PATH) $(SRCS) $(MAIN_SRC) \
-		-o snake.js
+		-o $(WASM_NAME)
 
 wasm-clean:
-	rm -f snake.js snake.wasm
+	rm -f $(WASM_NAME) $(NAME).wasm
 
-wasm-re: wasm-clean wasm
+wasm-re: wasm-clean $(WASM_NAME)
 
 # Serve WASM at http://localhost:8080
 wasm-serve:
@@ -133,5 +156,5 @@ wasm-serve:
 wasm-shell:
 	docker run -it --rm -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) bash
 
-PHONY: wasm wasm-clean wasm-re wasm-serve wasm-shell
+.PHONY: wasm-clean wasm-re wasm-serve wasm-shell
 

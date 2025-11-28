@@ -22,12 +22,32 @@
             box-shadow: 0 0 10px #000;
         }
     </style>
+    <script type="text/javascript" src="elm.js"></script>
 </head>
 <body>
-    <h2>Snake WASM Output</h2>
-    <div id="terminal">Loading WebAssembly…</div>
 
+    <h2>Snake ELM node</h2>
+    <div id="elm-node">Loading Elm...<div>
+
+    <h2>Snake WASM Output</h2>
+    <div id="terminal">Loading WebAssembly...</div>
+
+    <script type="text/javascript">
+        // Elm stuff
+        var app = Elm.Main.init({
+            node: document.getElementById('elm-node')
+        });
+
+        // Elm -> JS
+        app.ports.sendToJs.subscribe((payload) => {
+            if (payload.type === "step") {
+                print("[Elm→WASM] step(" + payload.value + ")");
+                // Later: call Module.ccall("step", ...)
+            }
+        });
+    </script>
     <script type="module">
+        // WASM STUFF
         import createModule from "./snake.js";
 
         const term = document.getElementById("terminal");

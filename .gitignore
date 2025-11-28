@@ -10,3 +10,8 @@ snake.wasm
 #test
 test-*
 !test-*.cpp
+
+#elm
+elm.js
+deps
+elm-stuff
