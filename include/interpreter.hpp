@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cstdint>
 
 #include "environment.hpp"
 

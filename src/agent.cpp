@@ -1,4 +1,6 @@
 #include <cassert>
+#include <algorithm>
+#include <array>
 
 #include "agent.hpp"
 
@@ -7,7 +9,7 @@ Move Agent::decideOnAction(const Vision &vision) {
     auto state = State(vision);
 
     if (q_table.find(state) == q_table.end()) {
-        q_table.insert({state, {0, 0, 0, 0}});
+        q_table[state] = {0.f, 0.f, 0.f, 0.f};
     }
 
     std::uniform_real_distribution<float> dist(0.f, 1.f);
@@ -35,10 +37,10 @@ void Agent::updateQtable(const Vision &vision, Move move, float reward,
     auto state = State(vision);
 
     if (q_table.find(state) == q_table.end()) {
-        q_table.insert({state, {0, 0, 0, 0}});
+        q_table[state] = {0.f, 0.f, 0.f, 0.f};
     }
     if (q_table.find(next_state) == q_table.end()) {
-        q_table.insert({next_state, {0, 0, 0, 0}});
+        q_table[next_state] = {0.f, 0.f, 0.f, 0.f};
     }
 
     auto &q_values = q_table[state];
