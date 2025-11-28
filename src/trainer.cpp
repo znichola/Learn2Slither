@@ -52,11 +52,11 @@ void train() {
             episode_score += rewar > 0 ? 1 : 0;
             if (done) {
                 if (board.snakeLength() > 4) {
-
-        std::cout << "\n=========== Starting ep: " << episode 
-            << " qtable_length " << agent.q_table.size()<< "\n";
-                std::cout << "episode score: " << episode_score
-                    << " length " << board.snakeLength() << "\n";
+                    std::cout << "\n=========== Starting ep: " << episode 
+                        << " qtable_length " << agent.q_table.size()<< "\n";
+                    std::cout << "episode score: " << episode_score
+                        << " length " << board.snakeLength()
+                        << " steps " << step << "\n";
                 }
                 break;
             }
