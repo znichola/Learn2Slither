@@ -32,7 +32,6 @@ public:
             Cell h, Cell t, unsigned length, unsigned seed, bool asSnake) const;
 
     State doMove(Move m) const;
-    float reward(MoveRes) const;
 
     unsigned snakeLength() const;
 };
@@ -61,6 +60,8 @@ public:
     inline Board genBoard(unsigned seed) const {
         return pipe(_board, seed, _pipeline);
     }
+
+    static Pipe standardPipeline();
 };
 
 

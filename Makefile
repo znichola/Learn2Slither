@@ -20,7 +20,7 @@ endif
 LEAKS_CHECK = valgrind
 EXAMPLE_FILE = example_file.txt
 
-FILES = environment interpreter agent
+FILES = environment interpreter agent trainer
 
 MAIN_SRC = src/main.cpp
 MAIN_OBJ = obj/main.o
@@ -68,7 +68,7 @@ run: all
 
 TEST_DIR       = test/
 TEST_OBJS_PATH = test/$(OBJS_PATH)
-TEST_FILES     = environment interpreter
+TEST_FILES     = environment interpreter trainer
 
 TEST_OBJS = $(addprefix $(TEST_DIR)obj/test-, $(addsuffix .o, $(TEST_FILES)))
 TEST_BINS = $(addprefix test-, $(TEST_FILES))
@@ -81,6 +81,9 @@ test-interpreter: $(TEST_OBJS_PATH)test-interpreter.o $(OBJS)
 	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
 
 test-environment: $(TEST_OBJS_PATH)test-environment.o $(OBJS)
+	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
+
+test-trainer: $(TEST_OBJS_PATH)test-trainer.o $(OBJS)
 	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
 
 test-clean:

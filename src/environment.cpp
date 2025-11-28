@@ -157,3 +157,14 @@ Board Pipe::pipe(const Board &board, unsigned seed, std::vector<Op> ops) {
   }
   return b;
 }
+
+Pipe Pipe::standardPipeline() {
+    return  Pipe(Board(10, 10), {
+                      Pipe::RandomSpawn{Board::Cell::Head},
+                      Pipe::RandomConnectedSpawn{
+                      Board::Cell::Head, Board::Cell::Snake, 2},
+                      Pipe::RandomSpawn{Board::Cell::Red},
+                      Pipe::RandomSpawn{Board::Cell::Green},
+                      Pipe::RandomSpawn{Board::Cell::Green},
+                  });
+}

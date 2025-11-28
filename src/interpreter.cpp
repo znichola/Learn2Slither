@@ -10,6 +10,7 @@ Vision::Vision(const Board &board) {
             board._grid.begin(), board._grid.end(), Board::Cell::Head);
     if (c != 1 || head_it == board._grid.end()
             || rhead_it == board._grid.rend()) {
+        return ;
         throw std::runtime_error("Vision: board must contain one head");
     }
 

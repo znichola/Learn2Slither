@@ -26,9 +26,9 @@ public:
     // Random for epsilon greedy
     std::mt19937 rng{std::random_device{}()};
 
-    Move decideOnAction(const Vision & vision);
+    Move chooseAction(const Vision & vision);
 
     void updateQtable(const Vision &vision, Move move, float reward,
-                      const State &next_state);
+                      const Vision &next_vision);
 };
 

@@ -5,7 +5,7 @@
 #include "agent.hpp"
 
 
-Move Agent::decideOnAction(const Vision &vision) {
+Move Agent::chooseAction(const Vision &vision) {
     auto state = State(vision);
 
     if (q_table.find(state) == q_table.end()) {
@@ -33,8 +33,9 @@ Move Agent::decideOnAction(const Vision &vision) {
 
 
 void Agent::updateQtable(const Vision &vision, Move move, float reward,
-                         const State &next_state) {
+                         const Vision &next_vision) {
     auto state = State(vision);
+    auto next_state = State(next_vision);
 
     if (q_table.find(state) == q_table.end()) {
         q_table[state] = {0.f, 0.f, 0.f, 0.f};
