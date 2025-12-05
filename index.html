@@ -21,13 +21,18 @@
             min-height: 200px;
             box-shadow: 0 0 10px #000;
         }
+
+        .msg-board { color: #0f0; }
+        .msg-log { color: #0af; }
+        .msg-error { color: #f33; font-weight: bold; }
     </style>
     <script type="text/javascript" src="elm.js"></script>
+    <script type="text/javascript" src="support.js"></script>
 </head>
 <body>
 
     <h2>Snake ELM node</h2>
-    <div id="elm-node">Loading Elm...<div>
+    <div id="elm-node">Loading Elm...</div>
 
     <h2>Snake WASM Output</h2>
     <div id="terminal">Loading WebAssembly...</div>
@@ -52,20 +57,48 @@
 
         const term = document.getElementById("terminal");
 
-        function print(text) {
-            term.textContent += text + "\n";
+        function print(text, className = '') {
+            const line = document.createElement('div');
+            if (className) line.className = className;
+            line.textContent = text;
+            term.appendChild(line);
             term.scrollTop = term.scrollHeight;
         }
 
+        // Create parser instance
+        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR']);
+
+        // Handle parsed messages
+        parser.onMessage = (message) => {
+            switch(message.type) {
+                case 'board':
+                    print(`[BOARD]`, 'msg-board');
+                    print(message.content, 'msg-board');
+                    break;
+                case 'log':
+                    print(`[LOG] ${message.content}`, 'msg-log');
+                    break;
+                case 'error':
+                    print(`[ERROR] ${message.content}`, 'msg-error');
+                    break;
+                default:
+                    print(`[${message.type.toUpperCase()}] ${message.content}`);
+            }
+        };
+
         // Start the WASM module
         createModule({
-            print: print,
-            printErr: (t) => print("[ERR] " + t)
+            print: (text) => {
+                parser.processStdout(text + '\n');
+            },
+            printErr: (text) => {
+                parser.processStderr(text + '\n');
+            }
         }).then((Module) => {
             term.textContent = "";       // Clear the "Loading" message
+            print("[SYSTEM] WASM Runtime initialized", 'msg-log');
             Module.callMain([]);         // Run your main()
         });
     </script>
 </body>
 </html>
-
