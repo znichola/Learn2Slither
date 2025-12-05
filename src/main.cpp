@@ -7,9 +7,8 @@
 #include "logger.hpp"
 
 int main() {
-    LoggerConfig config;
-    Logger logger(config);
-    
+    Logger logger(LoggerConfig{});
+
     Pipe p(Board(10, 10), {
             Pipe::RandomSpawn{Board::Cell::Head},
             Pipe::RandomConnectedSpawn{Board::Cell::Head,
@@ -22,7 +21,7 @@ int main() {
     std::mt19937 rng(seed);
     auto board = p.genBoard(seed);
 
-    auto moves = {Move::Down, Move::Down, Move::Right, Move::Right, Move::Up, Move::Left};
+    auto moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left };
 
     logger.log() << "Game initialized with seed: " << seed;
     logger.board() << board;
@@ -30,6 +29,7 @@ int main() {
     for (auto it = moves.begin(); it != moves.end(); ++it) {
         auto move = *it;
         auto [newBoard, moveRes] = board.doMove(move, rng());
+        board = newBoard;
 
         logger.log() << "Move " << i << ": " << move << " - Result: " << moveRes;
         logger.board() << board;

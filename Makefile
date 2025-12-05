@@ -113,11 +113,11 @@ deps/elm:
 	&& gzip -d elm.gz \
 	&& chmod +x elm
 
-elm.js: elm/Main.elm
+elm.js: elm/Main.elm deps/elm
 	cd elm && ../deps/elm make Main.elm --output=../elm.js
 
 elm-clean:
-	rm elm.js
+	-rm elm.js
 
 .PHONY: elm-clean
 
@@ -129,7 +129,7 @@ EMCC_DOCKER_IMG = emscripten/emsdk
 
 WASM_NAME=$(NAME).js
 
-$(WASM_NAME) : $(OBJS)
+$(WASM_NAME) : $(OBJS) $(MAIN_OBJ)
 	docker run --rm -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) \
 		em++ -Wall -Wextra -Werror -std=c++20 \
 		-s WASM=1 \
@@ -149,7 +149,7 @@ wasm-clean:
 wasm-re: wasm-clean $(WASM_NAME)
 
 # Serve WASM at http://localhost:8080
-wasm-serve:
+wasm-serve: $(WASM_NAME)
 	docker run --rm -p 8080:8080 -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) \
 		emrun --no_browser --port 8080 .
 
