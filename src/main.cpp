@@ -1,37 +1,43 @@
-#include "iostream"
+#include <iostream>
+#include <sstream>
+#include <random>
 
 #include "environment.hpp"
 #include "interpreter.hpp"
+#include "logger.hpp"
 
 int main() {
-    Board board = Board(10, 10);
+    LoggerConfig config;
+    Logger logger(config);
+    
+    Pipe p(Board(10, 10), {
+            Pipe::RandomSpawn{Board::Cell::Head},
+            Pipe::RandomConnectedSpawn{Board::Cell::Head,
+                Board::Cell::Snake, 2},
+            Pipe::RandomSpawn{Board::Cell::Red},
+            Pipe::RandomSpawn{Board::Cell::Green},
+            Pipe::RandomSpawn{Board::Cell::Green},
+            });
+    auto seed = 42;
+    std::mt19937 rng(seed);
+    auto board = p.genBoard(seed);
 
-    Pipe p(board, {
-                      Pipe::RandomSpawn{Board::Cell::Head},
-                      Pipe::RandomConnectedSpawn{
-                      Board::Cell::Head, Board::Cell::Snake, 2},
-                      Pipe::RandomSpawn{Board::Cell::Red},
-                      Pipe::RandomSpawn{Board::Cell::Green},
-                      Pipe::RandomSpawn{Board::Cell::Green},
-                  });
+    auto moves = {Move::Down, Move::Down, Move::Right, Move::Right, Move::Up, Move::Left};
 
-    for (unsigned i = 0; i < 10; i++) {
-        auto gen = p.genBoard(i);
-        auto vision = Vision(gen);
-        std::cout << "SEED " << i << "\n" << gen << "\nVISION\n" << vision;
-    }
+    logger.log() << "Game initialized with seed: " << seed;
+    logger.board() << board;
+    int i = 1;
+    for (auto it = moves.begin(); it != moves.end(); ++it) {
+        auto move = *it;
+        auto [newBoard, moveRes] = board.doMove(move, rng());
 
-    Board start = p.genBoard(42);
+        logger.log() << "Move " << i << ": " << move << " - Result: " << moveRes;
+        logger.board() << board;
 
-
-    std::cout << "Start:\n" << start << "\n";
-
-    Board next = start;
-    for (int i = 0; i < 6; i++) {
-        auto res = next.doMove(Move::Down, 0);
-        next = res.first;
-        std::cout << "Move result: " << res.second << "\n";
-        std::cout << "Next:\n" << next << "\n";
-        if (res.second == MoveRes::Death) break;
+        if (moveRes == MoveRes::Death) {
+            logger.error() << "Game Over: Snake died!";
+            break;
+        }
+        i++;
     }
 }
