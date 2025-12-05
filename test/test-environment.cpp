@@ -1,4 +1,5 @@
 #include <ranges>
+#include <random>
 
 #include "environment.hpp"
 #include "interpreter.hpp"
@@ -18,6 +19,7 @@ int main() {
 }
 
 void extracted(int seed, Board board, Move move) {
+    std::mt19937 rng(seed);
     for (int i = 0; i < 4; i++) {
 
         std::ostringstream name;
@@ -27,7 +29,7 @@ void extracted(int seed, Board board, Move move) {
 
         try {
             out << move << " move " << i << "\n";
-            auto [b, r] = board.doMove(move);
+            auto [b, r] = board.doMove(move, rng());
             board = b;
             out << "Move result " << r << "\n"
                 << "BOARD:\n"
@@ -66,26 +68,28 @@ void move() {
     extracted(seed, board, Move::Up);
     extracted(seed, board, Move::Down);
     auto moves = {
-        Move::Left, Move::Left, Move::Left, Move::Left,
-        Move::Up, Move::Up, Move::Up, Move::Up, Move::Up
+        Move::Down, Move::Down, Move::Left, Move::Left,
+        Move::Left, Move::Left, Move::Left, Move::Left, Move::Left
         };
     auto expected_res = {
-        MoveRes::Advance, MoveRes::Green, MoveRes::Advance, MoveRes::Advance,
         MoveRes::Advance, MoveRes::Advance, MoveRes::Advance, MoveRes::Advance,
-        MoveRes::Red
+        MoveRes::Advance, MoveRes::Red, MoveRes::Advance, MoveRes::Green,
+        MoveRes::Advance
     };
+
+    std::mt19937 rng(seed);
 
     auto it1 = moves.begin();
     auto it2 = expected_res.begin();
     for (; it1 != moves.end() && it2 != expected_res.end(); ++it1, ++it2) {
         auto m = *it1;
         auto e = *it2;
-        auto [b, r] = board.doMove(m);
+        auto [b, r] = board.doMove(m, rng());
         board = b;
-        //std::cout << "RES: " << r <<  "\n" << board << "\n";
-        assert(r == e && "Move res does not match expected");
+        // std::cout << "RES: " << r <<  "\n" << board << "\n";
+        ASSERT_EQ(r, e, "Move res does not match expected");
     }
-    assert(board.snakeLength() == 3 && "Shorter after each red apple");
+    ASSERT_EQ(board.snakeLength(), 3U, "Shorter after each red apple");
     std::stringstream out;
     out << "BOARD:\n" << board << "\n";
     auto name = "Custom_red_apple_path";

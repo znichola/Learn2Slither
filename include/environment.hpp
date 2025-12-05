@@ -31,7 +31,7 @@ public:
     Op randomConnectedSpawn(
             Cell h, Cell t, unsigned length, unsigned seed, bool asSnake) const;
 
-    State doMove(Move m) const;
+    State doMove(Move m, unsigned seed) const;
 
     unsigned snakeLength() const;
 };

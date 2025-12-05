@@ -32,7 +32,8 @@ void train() {
         for (unsigned step = 0; step < MAX_STEPS; step++) {
             Vision vision(board);
             Move action = agent.chooseAction(vision);
-            auto [next_board, moveRes] = board.doMove(action);
+            auto nextSeed = agent.rng();
+            auto [next_board, moveRes] = board.doMove(action, nextSeed);
 
             if (moveRes == MoveRes::Death) done = true;
             float rewar = reward(moveRes);
@@ -51,7 +52,7 @@ void train() {
 */
             episode_score += rewar > 0 ? 1 : 0;
             if (done) {
-                if (board.snakeLength() > 4) {
+                if (board.snakeLength() > 5) {
                     std::cout << "\n=========== Starting ep: " << episode 
                         << " qtable_length " << agent.q_table.size()<< "\n";
                     std::cout << "episode score: " << episode_score

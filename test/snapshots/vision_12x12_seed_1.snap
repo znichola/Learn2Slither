@@ -1,29 +1,29 @@
 SEED 1
 BOARD:
 WWWWWWWWWWWW
-W       S  W
-W       S  W
-W       H  W
 W          W
 W          W
 W          W
-W     G    W
+WH         W
+WSS        W
 W          W
-W         RW
-W         GW
+W        G W
+W   R      W
+W          W
+W  G       W
 WWWWWWWWWWWW
 
 VISION
-        W   
-        S   
-        S   
-W       H  W
+ W          
+            
+            
+            
+WH         W
+ S          
             
             
             
             
             
-            
-            
-        W   
+ W          
 

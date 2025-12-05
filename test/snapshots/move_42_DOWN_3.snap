@@ -1,3 +1,16 @@
 DOWN move 3
-EXCEPTION THROWN
-NewHead out of range
+Move result Advanced
+BOARD:
+WWWWWWWWWWWW
+W          W
+W          W
+W          W
+W          W
+W          W
+W   G R   SW
+W         SW
+W         HW
+W          W
+W        G W
+WWWWWWWWWWWW
+

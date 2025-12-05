@@ -28,7 +28,7 @@ int main() {
 
     Board next = start;
     for (int i = 0; i < 6; i++) {
-        auto res = next.doMove(Move::Down);
+        auto res = next.doMove(Move::Down, 0);
         next = res.first;
         std::cout << "Move result: " << res.second << "\n";
         std::cout << "Next:\n" << next << "\n";

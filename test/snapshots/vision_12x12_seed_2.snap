@@ -1,29 +1,29 @@
 SEED 2
 BOARD:
 WWWWWWWWWWWW
-W    SH    W
-W    S     W
 W          W
 W          W
 W          W
+W  HS      W
+W   S      W
+W  G       W
 W          W
+WR         W
+W         GW
 W          W
-W        R W
-W          W
-W     G G  W
 WWWWWWWWWWWW
 
 VISION
-      W     
-W    SH    W
+   W        
+            
+            
+            
+W  HS      W
+            
+   G        
             
             
             
             
-            
-            
-            
-            
-      G     
-      W     
+   W        
 

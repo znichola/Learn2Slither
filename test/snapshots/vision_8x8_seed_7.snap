@@ -1,19 +1,19 @@
 SEED 7
 BOARD:
 WWWWWWWW
-W SS   W
-W  H   W
-W    G W
+W  S   W
+W  S   W
+WG H R W
 W      W
-W G    W
-W    R W
+W      W
+WG     W
 WWWWWWWW
 
 VISION
    W    
    S    
-W  H   W
-        
+   S    
+WG H R W
         
         
         

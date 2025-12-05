@@ -1,21 +1,21 @@
 SEED 5
 BOARD:
 WWWWWWWW
-W   R  W
-W     SW
-W    HSW
-WG     W
-W     GW
+W G    W
+WSS    W
+WH    RW
 W      W
+W      W
+W G    W
 WWWWWWWW
 
 VISION
-     W  
+ W      
+        
+ S      
+WH    RW
         
         
-W    HSW
         
-        
-        
-     W  
+ W      
 

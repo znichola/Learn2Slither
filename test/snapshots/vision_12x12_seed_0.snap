@@ -1,29 +1,29 @@
 SEED 0
 BOARD:
 WWWWWWWWWWWW
-W       S  W
-W       S  W
-W       H  W
 W          W
-W          W
-W          W
-W     G    W
 W          W
 W         RW
+W          W
+W          W
+W  G S     W
+W    SH    W
 W         GW
+W          W
+W          W
 WWWWWWWWWWWW
 
 VISION
-        W   
-        S   
-        S   
-W       H  W
+      W     
             
             
             
             
             
             
+W    SH    W
             
-        W   
+            
+            
+      W     
 

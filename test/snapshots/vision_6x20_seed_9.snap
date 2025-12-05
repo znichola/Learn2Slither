@@ -1,28 +1,32 @@
 SEED 9
 BOARD:
 WWWWWW
+WSS  W
+W H  W
+W    W
+W R  W
 W    W
 W    W
-W G  W
+W    W
+W    W
+W    W
+W    W
+W    W
 W    W
 W    W
 WG   W
 W    W
 W    W
 W    W
-W    W
-W    W
-WR   W
-W    W
-W    W
-W  H W
-W  SSW
-W    W
-W    W
+W   GW
 WWWWWW
 
 VISION
-   W  
+  W   
+  S   
+W H  W
+      
+  R   
       
       
       
@@ -37,9 +41,5 @@ VISION
       
       
       
-W  H W
-   S  
-      
-      
-   W  
+  W   
 

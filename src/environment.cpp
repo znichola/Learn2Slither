@@ -21,7 +21,7 @@ Board::Board(unsigned int x, unsigned int y) : x_dim(x+2), y_dim(y+2) {
 }
 
 Board::Op Board::randomSpawn(Cell t, unsigned seed) const {
-    std::minstd_rand0 r (seed);
+    std::mt19937 rng(seed);
 
     std::vector<unsigned> candidates;
     unsigned i = 0;
@@ -31,13 +31,14 @@ Board::Op Board::randomSpawn(Cell t, unsigned seed) const {
         }
         i++;
     }
-    i = candidates[r() % candidates.size()];
+    std::uniform_int_distribution<unsigned> dist(0, candidates.size() - 1);
+    i = candidates[dist(rng)];
     Board newBoard = *this;
     newBoard._grid[i] = t;
     if (t == Cell::Head) {
         newBoard._snake.push_back(i);
     }
-    return {newBoard, r()};
+    return {newBoard, rng()};
 }
 
 Board::Op Board::randomConnectedSpawn(
@@ -47,7 +48,7 @@ Board::Op Board::randomConnectedSpawn(
         unsigned seed,
         bool asSnake
         ) const {
-    std::minstd_rand0 r (seed);
+    std::mt19937 rng(seed);
 
     Board newBoard = *this;
 
@@ -71,7 +72,8 @@ Board::Op Board::randomConnectedSpawn(
                     "randomConnectedSpawn: no valid candidates");
         }
         newBoard._grid[head] = t;
-        auto index = candidates[r() % candidates.size()];
+        std::uniform_int_distribution<unsigned> dist(0, candidates.size() - 1);
+        auto index = candidates[dist(rng)];
         if (asSnake) {
             newBoard._snake.push_back(index);
         }
@@ -79,7 +81,7 @@ Board::Op Board::randomConnectedSpawn(
         head = index;
     }
 
-    return {newBoard, r()};
+    return {newBoard, rng()};
 }
 
 void printSnake(std::vector<unsigned> s) {
@@ -90,7 +92,7 @@ void printSnake(std::vector<unsigned> s) {
     std::cout << "}\n";
 }
 
-Board::State Board::doMove(Move m) const {
+Board::State Board::doMove(Move m, unsigned seed) const {
     if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
 
     Board b = *this;
@@ -131,6 +133,14 @@ Board::State Board::doMove(Move m) const {
     }
     if (b.snakeLength() == 0) moveRes = MoveRes::Death;
 
+    if (moveRes == MoveRes::Red) {
+        auto rb = b.randomSpawn(Cell::Red, seed);
+        return {rb.first, moveRes};
+    }
+    else if (moveRes == MoveRes::Green) {
+        auto rb = b.randomSpawn(Cell::Green, seed);
+        return {rb.first, moveRes};
+    }   
     return {b, moveRes};
 }
 

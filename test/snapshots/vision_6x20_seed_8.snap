@@ -2,16 +2,11 @@ SEED 8
 BOARD:
 WWWWWW
 W    W
-W  G W
 W    W
 W    W
 W    W
 W    W
-W    W
-W    W
-WS   W
-WS R W
-WH   W
+WG   W
 W    W
 W G  W
 W    W
@@ -19,10 +14,15 @@ W    W
 W    W
 W    W
 W    W
+W    W
+W    W
+W  SSW
+W  RHW
+W    W
 WWWWWW
 
 VISION
- W    
+    W 
       
       
       
@@ -31,9 +31,6 @@ VISION
       
       
       
- S    
- S    
-WH   W
       
       
       
@@ -41,5 +38,8 @@ WH   W
       
       
       
- W    
+    S 
+W  RHW
+      
+    W 
 

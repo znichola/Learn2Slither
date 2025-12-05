@@ -2,6 +2,11 @@ SEED 18
 BOARD:
 WWWWWWWWW
 W       W
+W  G    W
+W      RW
+W       W
+W       W
+W    G  W
 W       W
 W       W
 W       W
@@ -13,13 +18,10 @@ W       W
 W       W
 W       W
 W       W
-W     G W
 W       W
 W       W
-W       W
-W       W
-WSH G   W
-WS      W
+W    H  W
+W    SS W
 W       W
 W       W
 W       W
@@ -30,13 +32,17 @@ W       W
 W       W
 W       W
 W       W
-W       W
-WR      W
 W       W
 WWWWWWWWW
 
 VISION
-  W      
+     W   
+         
+         
+         
+         
+         
+     G   
          
          
          
@@ -50,13 +56,8 @@ VISION
          
          
          
-         
-         
-         
-         
-WSH G   W
-         
-         
+W    H  W
+     S   
          
          
          
@@ -68,6 +69,5 @@ WSH G   W
          
          
          
-         
-  W      
+     W   
 

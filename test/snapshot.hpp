@@ -7,6 +7,18 @@
 #include <filesystem>
 #include <cassert>
 
+#define ASSERT_EQ(a, b, msg)                                          \
+    do {                                                              \
+        auto _va = (a);                                               \
+        auto _vb = (b);                                               \
+        if (!(_va == _vb)) {                                          \
+            std::cerr << "  Expected: " << #a << " == " << #b << "\n" \
+                      << "  Left :  " << _va << "\n"                  \
+                      << "  Right:  " << _vb << "\n";                 \
+            assert(false && msg);                                     \
+        }                                                             \
+    } while (0)
+
 namespace snapshot {
 
 inline std::string loadFile(const std::string &path) {

@@ -1,6 +1,15 @@
 SEED 16
 BOARD:
 WWWWWWWWW
+W    G  W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W S     W
+WHS     W
 W       W
 W       W
 W       W
@@ -8,30 +17,21 @@ W       W
 W       W
 W       W
 W       W
-W G     W
 W       W
-W     R W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W       W
+W  R    W
 W       W
 W  G    W
-W       W
-W       W
-WH      W
-WS      W
-WS      W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
-W       W
 W       W
 WWWWWWWWW
 
@@ -45,15 +45,15 @@ VISION
          
          
          
+WHS     W
          
          
          
          
          
          
-WH      W
- S       
- S       
+         
+         
          
          
          

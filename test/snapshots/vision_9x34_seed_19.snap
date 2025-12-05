@@ -1,12 +1,17 @@
 SEED 19
 BOARD:
 WWWWWWWWW
+WR      W
+W       W
+W       W
+WS      W
+WS      W
+WH      W
 W       W
 W       W
 W       W
 W       W
 W       W
-W    R  W
 W       W
 W       W
 W       W
@@ -15,17 +20,9 @@ W       W
 W       W
 W       W
 W       W
-W G     W
 W       W
 W       W
-W       W
-W       W
-WSSH    W
-W       W
-W       W
-W       W
-W       W
-W       W
+W     G W
 W       W
 W       W
 W       W
@@ -33,10 +30,19 @@ W       W
 W       W
 W       W
 W      GW
+W       W
+W       W
+W       W
 WWWWWWWWW
 
 VISION
-   W     
+ W       
+ R       
+         
+         
+ S       
+ S       
+WH      W
          
          
          
@@ -56,7 +62,6 @@ VISION
          
          
          
-WSSH    W
          
          
          
@@ -64,10 +69,5 @@ WSSH    W
          
          
          
-         
-         
-         
-         
-         
-   W     
+ W       
 

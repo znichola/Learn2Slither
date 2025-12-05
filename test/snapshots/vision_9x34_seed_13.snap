@@ -2,20 +2,16 @@ SEED 13
 BOARD:
 WWWWWWWWW
 W       W
-W      GW
 W       W
 W       W
 W       W
 W       W
+W    G  W
 W       W
 W       W
-W  G    W
 W       W
 W       W
-WH      W
-WS      W
-WS      W
-W  R    W
+WG      W
 W       W
 W       W
 W       W
@@ -29,28 +25,18 @@ W       W
 W       W
 W       W
 W       W
+W     SSW
+W     H W
 W       W
 W       W
+W       W
+W R     W
 W       W
 W       W
 WWWWWWWWW
 
 VISION
- W       
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-         
-WH      W
- S       
- S       
+      W  
          
          
          
@@ -69,5 +55,19 @@ WH      W
          
          
          
- W       
+         
+         
+         
+         
+         
+         
+      S  
+W     H W
+         
+         
+         
+         
+         
+         
+      W  
 
