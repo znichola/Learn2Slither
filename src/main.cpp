@@ -32,5 +32,6 @@ int main() {
         next = res.first;
         std::cout << "Move result: " << res.second << "\n";
         std::cout << "Next:\n" << next << "\n";
+        if (res.second == MoveRes::Death) break;
     }
 }

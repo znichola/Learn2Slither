@@ -87,8 +87,8 @@ test-trainer: $(TEST_OBJS_PATH)test-trainer.o $(OBJS)
 	$(CC) $(CFLAGS) $(BUILD_INFO) $(OBJS) $< -o $@
 
 test-clean:
-	rm $(TEST_OBJS)
-	rm $(TEST_BINS)
+	-rm $(TEST_OBJS)
+	-rm $(TEST_BINS)
 
 test: $(TEST_BINS)
 	@echo "Running all tests..."
