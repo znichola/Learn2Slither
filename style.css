@@ -1,0 +1,268 @@
+/* ============================================================
+   CORE COLORS (Pastel + Light/Dark)
+   ============================================================ */
+:root {
+    color-scheme: light dark;
+
+    --bg: light-dark(#fafafa, #0c0c0c);
+    --text: light-dark(#222, #cfcfcf);
+    --accent: light-dark(#147a3d, #7fffa1);
+
+    --panel-bg: light-dark(#fff, #111);
+    --panel-border: light-dark(#ccc, #333);
+
+    --wall-bg: light-dark(#e8e8e8, #222);
+    --wall-text: light-dark(#999, #555);
+
+    --empty-bg: light-dark(#fdfdfd, #0c0c0c);
+
+    --green-color: light-dark(#155724, #a3e4a3);
+    --green-bg: light-dark(#a3e4a3, #15401f);
+
+    --red-color: light-dark(#721c24, #f5a3a3);
+    --red-bg: light-dark(#f5a3a3, #3d1111);
+
+    --blue-color: light-dark(#0d3b75, #a3c4f5);
+    --blue-bg: light-dark(#a3c4f5, #123d5a);
+
+    --terminal-bg: light-dark(#f2f2f2, #000);
+
+    --scrollbar: light-dark(#ccc, #333);
+    --scrollbar-hover: light-dark(#bbb, #444);
+
+    --cell-size: 1.75rem;
+}
+
+.light {
+    color-scheme: light;
+}
+
+.dark {
+    color-scheme: dark;
+}
+
+/* ============================================================
+   GLOBAL RESET
+   ============================================================ */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 1.25rem;
+    font-family: "Courier New", monospace;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text);
+    background-color: var(--bg);
+}
+
+h2,
+h3 {
+    color: var(--accent);
+    margin: 0 0 0.625rem;
+    font-weight: normal;
+    line-height: 1.3;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.container {
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.game-section,
+.logs-container,
+.errors-container {
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 0.0625rem solid var(--panel-border);
+    background-color: var(--panel-bg);
+    margin-bottom: 1.25rem;
+}
+
+.logs-container {
+    border-color: var(--blue-bg);
+}
+
+.errors-container {
+    border-color: var(--red-bg);
+}
+
+/* ============================================================
+   GAME BOARD
+   ============================================================ */
+.game-board {
+    margin: 1.25rem auto;
+    border-collapse: collapse;
+    border: 0.0625rem solid var(--panel-border);
+    background-color: var(--panel-bg);
+}
+
+.cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    text-align: center;
+    font-size: 1rem;
+    line-height: var(--cell-size);
+    border: 0.0625rem solid var(--panel-border);
+}
+
+.cell-wall {
+    background-color: var(--wall-bg);
+    color: var(--wall-text);
+}
+
+.cell-empty {
+    background-color: var(--empty-bg);
+}
+
+.cell-snake {
+    color: var(--blue-color);
+    background-color: var(--blue-bg);
+}
+
+.cell-head {
+    color: #fff;
+    background-color: var(--blue-bg);
+    font-weight: bold;
+}
+
+.cell-green {
+    color: var(--green-color);
+    background-color: var(--green-bg);
+}
+
+.cell-red {
+    color: var(--red-color);
+    background-color: var(--red-bg);
+}
+
+/* ============================================================
+   BOARD PLACEHOLDER
+   ============================================================ */
+.board-placeholder {
+    background-color: var(--panel-bg);
+    padding: 1.875rem;
+    text-align: center;
+    border-radius: 0.375rem;
+    border: 0.0625rem dashed var(--panel-border);
+    color: var(--accent);
+}
+
+/* ============================================================
+   CONTROLS
+   ============================================================ */
+.controls {
+    text-align: center;
+    margin-top: 0.9375rem;
+}
+
+.btn {
+    background-color: var(--panel-bg);
+    color: var(--accent);
+    border: 0.0625rem solid var(--blue-bg);
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn:hover {
+    background-color: light-dark(#e0f0ff, #222);
+}
+
+/* ============================================================
+   LOGS / ERRORS
+   ============================================================ */
+.logs,
+.errors {
+    max-height: 15.625rem;
+    overflow-y: auto;
+    font-size: 0.75rem;
+}
+
+.log-entry,
+.error-entry {
+    padding: 0.375rem 0.5rem;
+    margin: 0.25rem 0;
+    border-left: 0.1875rem solid;
+    background-color: var(--empty-bg);
+}
+
+.log-entry {
+    border-color: var(--blue-bg);
+}
+
+.error-entry {
+    border-color: var(--red-bg);
+    font-weight: bold;
+}
+
+/* ============================================================
+   TERMINAL
+   ============================================================ */
+#terminal {
+    background-color: var(--terminal-bg);
+    border: 0.0625rem solid var(--panel-border);
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    overflow-y: auto;
+    max-height: 15.625rem;
+    white-space: pre-wrap;
+}
+
+.msg-board {
+    color: var(--accent);
+}
+
+.msg-log {
+    color: var(--blue-bg);
+}
+
+.msg-error {
+    color: var(--red-bg);
+}
+
+/* ============================================================
+   SCROLLBARS
+   ============================================================ */
+::-webkit-scrollbar {
+    width: 0.375rem;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-hover);
+}
+
+/* ============================================================
+   DESKTOP BREAKPOINT
+   ============================================================ */
+@media (min-width: 48rem) {
+
+    .container {
+        grid-template-columns: 2fr 1fr;
+        gap: 1.25rem;
+    }
+
+    .game-section,
+    .logs-container,
+    .errors-container {
+        margin-bottom: 0;
+    }
+}
