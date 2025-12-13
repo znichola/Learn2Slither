@@ -19,6 +19,7 @@ public:
     std::vector<unsigned> _snake;
 
     Board(unsigned x, unsigned y);
+    Board(const std::string &board);
 
     // Board& operator=(Board &b) const = default;
 

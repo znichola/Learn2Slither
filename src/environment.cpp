@@ -1,6 +1,8 @@
 #include <iostream>
 #include <random>
 #include <algorithm>
+#include <sstream>
+#include <cassert>
 
 #include "environment.hpp"
 
@@ -17,6 +19,53 @@ Board::Board(unsigned int x, unsigned int y) : x_dim(x+2), y_dim(y+2) {
         } else {
             _grid.push_back(Cell::Empty);
         }
+    }
+}
+
+Board::Board(const std::string &board) {
+    std::stringstream ss(board);
+    std::string tmp;
+    auto match = [](auto c) {
+        switch (c) {
+            case (' '): return Cell::Empty;
+            case ('W'): return Cell::Wall;
+            case ('H'): return Cell::Head;
+            case ('S'): return Cell::Snake;
+            case ('G'): return Cell::Green;
+            case ('R'): return Cell::Red;
+        }
+        assert(false && "invalid cell in board initilization");
+    };
+    y_dim = 0;
+    while (std::getline(ss, tmp, '\n')) {
+        if (tmp.length() <= 0)
+            continue;
+        x_dim = tmp.length();
+        for (auto c : tmp) {
+            _grid.push_back(match(c));
+        }
+        y_dim++;
+    }
+    auto it = find(_grid.begin(), _grid.end(), Cell::Head);
+    assert(it != _grid.end() && "board init, must have head");
+
+    unsigned head = std::distance(_grid.begin(), it);
+    _snake.push_back(head);
+    while (true) {
+        unsigned mask[] = {head+1, head-1, head+x_dim, head-x_dim};
+        bool found = false;
+        for (auto m : mask) {
+            assert(m > 0 && "board init bounds underflow check");
+            assert(m < _grid.size() && "board init bounds underflow check");
+            auto f_it = find(_snake.begin(), _snake.end(), m);
+            if (_grid[m] == Cell::Snake && f_it == _snake.end()) {
+                head = m;
+                _snake.insert(_snake.begin(), head);
+                found = true;
+                break;
+            }
+        }
+        if (!found) break;
     }
 }
 
