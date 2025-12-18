@@ -9,6 +9,27 @@
 int main() {
     Logger logger(LoggerConfig{});
 
+    auto foo = Board(R"(
+WWWWWWWWWWWW
+W          W
+W          W
+W          W
+W       SSHW
+W          W
+W   G R    W
+W          W
+W          W
+W          W
+W        G W
+WWWWWWWWWWWW
+            )");
+    std::cout << foo;
+    for (auto s : foo._snake) {
+        std::cout << s << " ";
+    }
+    std::cout << "\n";
+
+
     Pipe p(Board(10, 10), {
             Pipe::RandomSpawn{Board::Cell::Head},
             Pipe::RandomConnectedSpawn{Board::Cell::Head,
@@ -20,6 +41,13 @@ int main() {
     auto seed = 42;
     std::mt19937 rng(seed);
     auto board = p.genBoard(seed);
+
+    std::cout << board;
+    for (auto s : board._snake) {
+        std::cout << s << " ";
+    }
+    std::cout << "\n";
+    return 0;
 
     auto moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left };
 
@@ -41,3 +69,4 @@ int main() {
         i++;
     }
 }
+
