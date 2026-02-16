@@ -36,7 +36,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE := $(shell date -u +"%Y-%m-%d %H:%M:%S UTC")
 BUILD_INFO := -DGIT_COMMIT="$(GIT_COMMIT)" -DBUILD_DATE="$(BUILD_DATE)"
 
-all: $(NAME)
+all: $(NAME) elm.js wasm-serve
 
 $(OBJS_PATH)%.o: $(SRCS_PATH)%.cpp
 	@mkdir -p $(@D)

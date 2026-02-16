@@ -47,9 +47,9 @@ WWWWWWWWWWWW
         std::cout << s << " ";
     }
     std::cout << "\n";
-    return 0;
+    // return 0;
 
-    auto moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left };
+    auto moves = { Move::Up, Move::Down, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left };
 
     logger.log() << "Game initialized with seed: " << seed;
     logger.board() << board;

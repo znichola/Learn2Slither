@@ -1,7 +1,7 @@
 port module Main exposing (main)
 
 import Browser
-import Html exposing (Html, button, div, h3, table, tbody, td, text, tr)
+import Html exposing (Html, button, input, div, h3, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
@@ -31,7 +31,6 @@ type Cell
     | Green
     | Red
 
-
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { board = Nothing
@@ -57,19 +56,19 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 
 
 type Msg
-    = SendStep
+    = SendStep String
     | GotWasmMessage Decode.Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SendStep ->
+        SendStep value ->
             let
                 payload =
                     Encode.object
                         [ ( "type", Encode.string "step" )
-                        , ( "value", Encode.int 1 )
+                        , ( "value", Encode.string value )
                         ]
             in
             ( model, sendToJs payload )
@@ -175,14 +174,14 @@ view model =
         [ div [ class "game-section" ]
             [ h3 [] [ text "Game Board" ]
             , viewBoard model.board
-            , div [ class "controls" ]
-                [ button [ onClick SendStep, class "btn" ] [ text "Send Step → WASM" ]
-                ]
+            , viewControles
             ]
         , div [ class "info-section" ]
             [ viewLogs model.logs
             , viewErrors model.errors
             ]
+        , div [ class "input-section"]
+            [ viewConfig ]
         ]
 
 
@@ -231,6 +230,20 @@ viewCell cell =
     td [ class ("cell " ++ cellClass) ]
         [ text cellChar ]
 
+
+viewControles: Html Msg
+viewControles= div [class "controles"] [
+        button [ onClick (SendStep "UP")]  [text "up"]
+        , button [ onClick(SendStep "DOWN")]  [text "down"]
+        , button [ onClick(SendStep "LEFT")]  [text "left"]
+        , button [ onClick(SendStep "RIGHT")]  [text "right"]
+    ]
+
+viewConfig: Html Msg
+viewConfig = div [] 
+    [ div [] [text "foobar"]
+    , input [] [text "text"]
+    ]
 
 viewLogs : List String -> Html Msg
 viewLogs logs =
