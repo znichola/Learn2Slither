@@ -1,6 +1,7 @@
 port module Main exposing (main)
 
 import Browser
+import Time exposing (every)
 import Html exposing (Html, button, input, div, h3, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
@@ -16,6 +17,7 @@ type alias Model =
     { board : Maybe Board
     , logs : List String
     , errors : List String
+    , msgLogs : List WasmMessage
     }
 
 
@@ -36,6 +38,7 @@ init _ =
     ( { board = Nothing
       , logs = []
       , errors = []
+      , msgLogs = []
       }
     , Cmd.none
     )
@@ -59,6 +62,30 @@ type Msg
     = SendStep String
     | GotWasmMessage Decode.Value
 
+applyWasmMessage : WasmMessage -> Model -> Model
+applyWasmMessage wasmMsg model =
+    model
+        |> addToHistory wasmMsg
+        |> applyContent wasmMsg
+
+addToHistory : WasmMessage -> Model -> Model
+addToHistory wasmMsg model =
+    { model
+        | msgLogs =
+            model.msgLogs ++ [ wasmMsg ]
+    }
+
+applyContent: WasmMessage -> Model -> Model
+applyContent wasmMsg model =
+    case wasmMsg.msgType of
+        "board" ->
+            { model | board = parseBoard wasmMsg.content }
+        "log" ->
+            { model | logs = model.logs ++ [ wasmMsg.content ] }
+        "error" ->
+            { model | errors = model.errors ++ [ wasmMsg.content ] }
+        _ ->
+            model
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -76,25 +103,9 @@ update msg model =
         GotWasmMessage value ->
             case decodeWasmMessage value of
                 Ok wasmMsg ->
-                    case wasmMsg.msgType of
-                        "board" ->
-                            ( { model | board = parseBoard wasmMsg.content }
-                            , Cmd.none
-                            )
-
-                        "log" ->
-                            ( { model | logs = model.logs ++ [ wasmMsg.content ] }
-                            , Cmd.none
-                            )
-
-                        "error" ->
-                            ( { model | errors = model.errors ++ [ wasmMsg.content ] }
-                            , Cmd.none
-                            )
-
-                        _ ->
-                            ( model, Cmd.none )
-
+                    ( applyWasmMessage wasmMsg model
+                    , Cmd.none
+                    )
                 Err _ ->
                     ( { model | errors = model.errors ++ [ "Failed to decode WASM message" ] }
                     , Cmd.none

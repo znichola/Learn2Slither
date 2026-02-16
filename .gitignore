@@ -1,4 +1,8 @@
+# basic
 *.swp
+.vscode 
+
+# c++
 obj
 *.o
 snake
@@ -7,11 +11,11 @@ snake
 snake.js
 snake.wasm
 
-#test
+# test
 test-*
 !test-*.cpp
 
-#elm
+# elm
 elm.js
 deps
 elm-stuff

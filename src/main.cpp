@@ -9,7 +9,7 @@
 int main() {
     Logger logger(LoggerConfig{});
 
-    auto foo = Board(R"(
+    auto board = Board(R"(
 WWWWWWWWWWWW
 W          W
 W          W
@@ -23,33 +23,11 @@ W          W
 W        G W
 WWWWWWWWWWWW
             )");
-    std::cout << foo;
-    for (auto s : foo._snake) {
-        std::cout << s << " ";
-    }
-    std::cout << "\n";
+    int seed = 42;
 
-
-    Pipe p(Board(10, 10), {
-            Pipe::RandomSpawn{Board::Cell::Head},
-            Pipe::RandomConnectedSpawn{Board::Cell::Head,
-                Board::Cell::Snake, 2},
-            Pipe::RandomSpawn{Board::Cell::Red},
-            Pipe::RandomSpawn{Board::Cell::Green},
-            Pipe::RandomSpawn{Board::Cell::Green},
-            });
-    auto seed = 42;
     std::mt19937 rng(seed);
-    auto board = p.genBoard(seed);
 
-    std::cout << board;
-    for (auto s : board._snake) {
-        std::cout << s << " ";
-    }
-    std::cout << "\n";
-    // return 0;
-
-    auto moves = { Move::Up, Move::Down, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left, Move::Left };
+    auto moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Down, Move::Left, Move::Left, Move::Up, Move::Left, Move::Left};
 
     logger.log() << "Game initialized with seed: " << seed;
     logger.board() << board;
