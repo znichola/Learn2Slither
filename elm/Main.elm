@@ -1,7 +1,7 @@
 port module Main exposing (main)
 
 import Browser
-import Time exposing (every)
+import Time
 import Html exposing (Html, button, input, div, h3, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
@@ -17,7 +17,8 @@ type alias Model =
     { board : Maybe Board
     , logs : List String
     , errors : List String
-    , msgLogs : List WasmMessage
+    , receivedMessages : List WasmMessage
+    , replayIndex : Maybe Int
     }
 
 
@@ -38,7 +39,8 @@ init _ =
     ( { board = Nothing
       , logs = []
       , errors = []
-      , msgLogs = []
+      , receivedMessages = []
+      , replayIndex = Nothing
       }
     , Cmd.none
     )
@@ -61,6 +63,8 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 type Msg
     = SendStep String
     | GotWasmMessage Decode.Value
+    | StartReplay
+    | ReplayTick Time.Posix
 
 applyWasmMessage : WasmMessage -> Model -> Model
 applyWasmMessage wasmMsg model =
@@ -71,8 +75,8 @@ applyWasmMessage wasmMsg model =
 addToHistory : WasmMessage -> Model -> Model
 addToHistory wasmMsg model =
     { model
-        | msgLogs =
-            model.msgLogs ++ [ wasmMsg ]
+        | receivedMessages =
+            model.receivedMessages ++ [ wasmMsg ]
     }
 
 applyContent: WasmMessage -> Model -> Model
@@ -110,6 +114,53 @@ update msg model =
                     ( { model | errors = model.errors ++ [ "Failed to decode WASM message" ] }
                     , Cmd.none
                     )
+
+        StartReplay ->
+            case model.replayIndex of
+                Just _ ->
+                    (model, Cmd.none)
+
+                Nothing ->
+                    let lastIndex = List.length model.receivedMessages - 1
+                    in
+                    ( { model
+                        | replayIndex = Just lastIndex
+                        , logs = model.logs ++ [ "Starting replay.." ]
+                      }
+                    , Cmd.none
+                    )
+
+        ReplayTick _ ->
+            case model.replayIndex of
+                Nothing ->
+                    ( model, Cmd.none )
+                Just idx ->
+                     let
+                        msgFromEnd =
+                            model.receivedMessages
+                                |> List.reverse
+                                |> List.drop idx
+                                |> List.head
+                        in
+                    case msgFromEnd of
+                        Nothing ->
+                            ( { model | replayIndex = Nothing }
+                            , Cmd.none
+                            )
+
+                        Just wasmMsg ->
+                            let
+                                updatedModel = applyContent wasmMsg model
+
+                                nextIndex =
+                                    if idx <= 0 then
+                                        Nothing
+                                    else
+                                        Just (idx - 1)
+                            in
+                            ( { updatedModel | replayIndex = nextIndex }
+                            , Cmd.none
+                            )
 
 
 type alias WasmMessage =
@@ -251,9 +302,10 @@ viewControles= div [class "controles"] [
     ]
 
 viewConfig: Html Msg
-viewConfig = div [] 
+viewConfig = div []
     [ div [] [text "foobar"]
     , input [] [text "text"]
+    , button [ onClick StartReplay ] [ text "Replay" ]
     ]
 
 viewLogs : List String -> Html Msg
@@ -288,9 +340,16 @@ viewErrors errors =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    receiveFromJs GotWasmMessage
+subscriptions model =
+    Sub.batch
+        [ receiveFromJs GotWasmMessage
+        , case model.replayIndex of
+            Just _ ->
+                Time.every 200 ReplayTick
 
+            Nothing ->
+                Sub.none
+        ]
 
 
 -- MAIN
