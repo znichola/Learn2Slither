@@ -1,12 +1,12 @@
 port module Main exposing (main)
 
 import Browser
-import Time
-import Html exposing (Html, button, input, div, h3, table, tbody, td, text, tr)
+import Html exposing (Html, button, div, h3, input, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Time
 
 
 
@@ -33,6 +33,7 @@ type Cell
     | Head
     | Green
     | Red
+
 
 init : () -> ( Model, Cmd Msg )
 init _ =
@@ -66,11 +67,13 @@ type Msg
     | StartReplay
     | ReplayTick Time.Posix
 
+
 applyWasmMessage : WasmMessage -> Model -> Model
 applyWasmMessage wasmMsg model =
     model
         |> addToHistory wasmMsg
         |> applyContent wasmMsg
+
 
 addToHistory : WasmMessage -> Model -> Model
 addToHistory wasmMsg model =
@@ -79,17 +82,22 @@ addToHistory wasmMsg model =
             model.receivedMessages ++ [ wasmMsg ]
     }
 
-applyContent: WasmMessage -> Model -> Model
+
+applyContent : WasmMessage -> Model -> Model
 applyContent wasmMsg model =
     case wasmMsg.msgType of
         "board" ->
             { model | board = parseBoard wasmMsg.content }
+
         "log" ->
             { model | logs = model.logs ++ [ wasmMsg.content ] }
+
         "error" ->
             { model | errors = model.errors ++ [ wasmMsg.content ] }
+
         _ ->
             model
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -110,6 +118,7 @@ update msg model =
                     ( applyWasmMessage wasmMsg model
                     , Cmd.none
                     )
+
                 Err _ ->
                     ( { model | errors = model.errors ++ [ "Failed to decode WASM message" ] }
                     , Cmd.none
@@ -118,10 +127,12 @@ update msg model =
         StartReplay ->
             case model.replayIndex of
                 Just _ ->
-                    (model, Cmd.none)
+                    ( model, Cmd.none )
 
                 Nothing ->
-                    let lastIndex = List.length model.receivedMessages - 1
+                    let
+                        lastIndex =
+                            List.length model.receivedMessages - 1
                     in
                     ( { model
                         | replayIndex = Just lastIndex
@@ -134,14 +145,15 @@ update msg model =
             case model.replayIndex of
                 Nothing ->
                     ( model, Cmd.none )
+
                 Just idx ->
-                     let
+                    let
                         msgFromEnd =
                             model.receivedMessages
                                 |> List.reverse
                                 |> List.drop idx
                                 |> List.head
-                        in
+                    in
                     case msgFromEnd of
                         Nothing ->
                             ( { model | replayIndex = Nothing }
@@ -150,11 +162,13 @@ update msg model =
 
                         Just wasmMsg ->
                             let
-                                updatedModel = applyContent wasmMsg model
+                                updatedModel =
+                                    applyContent wasmMsg model
 
                                 nextIndex =
                                     if idx <= 0 then
                                         Nothing
+
                                     else
                                         Just (idx - 1)
                             in
@@ -242,7 +256,7 @@ view model =
             [ viewLogs model.logs
             , viewErrors model.errors
             ]
-        , div [ class "input-section"]
+        , div [ class "input-section" ]
             [ viewConfig ]
         ]
 
@@ -293,20 +307,24 @@ viewCell cell =
         [ text cellChar ]
 
 
-viewControles: Html Msg
-viewControles= div [class "controles"] [
-        button [ onClick (SendStep "UP")]  [text "up"]
-        , button [ onClick(SendStep "DOWN")]  [text "down"]
-        , button [ onClick(SendStep "LEFT")]  [text "left"]
-        , button [ onClick(SendStep "RIGHT")]  [text "right"]
-    ]
+viewControles : Html Msg
+viewControles =
+    div [ class "controles" ]
+        [ button [ onClick (SendStep "UP") ] [ text "up" ]
+        , button [ onClick (SendStep "DOWN") ] [ text "down" ]
+        , button [ onClick (SendStep "LEFT") ] [ text "left" ]
+        , button [ onClick (SendStep "RIGHT") ] [ text "right" ]
+        ]
 
-viewConfig: Html Msg
-viewConfig = div []
-    [ div [] [text "foobar"]
-    , input [] [text "text"]
-    , button [ onClick StartReplay ] [ text "Replay" ]
-    ]
+
+viewConfig : Html Msg
+viewConfig =
+    div []
+        [ div [] [ text "foobar" ]
+        , input [] [ text "text" ]
+        , button [ onClick StartReplay ] [ text "Replay" ]
+        ]
+
 
 viewLogs : List String -> Html Msg
 viewLogs logs =
@@ -317,7 +335,7 @@ viewLogs logs =
                 [ text "No logs yet" ]
 
              else
-                List.map (\log -> div [ class "log-entry" ] [ text log ]) (List.reverse logs |> List.take 10)
+                List.map (\log -> div [ class "log-entry" ] [ text log ]) logs
             )
         ]
 
@@ -331,7 +349,7 @@ viewErrors errors =
         div [ class "errors-container" ]
             [ h3 [] [ text "Errors" ]
             , div [ class "errors" ]
-                (List.map (\err -> div [ class "error-entry" ] [ text err ]) (List.reverse errors |> List.take 5))
+                (List.map (\err -> div [ class "error-entry" ] [ text err ]) errors)
             ]
 
 
@@ -350,6 +368,7 @@ subscriptions model =
             Nothing ->
                 Sub.none
         ]
+
 
 
 -- MAIN
