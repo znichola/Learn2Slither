@@ -41,6 +41,15 @@
     color-scheme: dark;
 }
 
+
+/* ============================================================
+   SPACING AND PADDING
+   ============================================================ */
+
+:root {
+    --corner-radius: 0.375rem;
+}
+
 /* ============================================================
    GLOBAL RESET
    ============================================================ */
@@ -92,7 +101,7 @@ summary {
 .logs-container,
 .errors-container {
     padding: 1rem;
-    border-radius: 0.375rem;
+    border-radius: var(--corner-radius);
     border: 0.12rem solid var(--panel-border);
     background-color: var(--panel-bg);
     margin-bottom: 1.25rem;
@@ -190,6 +199,13 @@ button:hover {
     background-color: light-dark(#e0f0ff, #222);
 }
 
+.theme-toggle {
+    position: absolute;
+    top: 1.2rem;
+    right: 1.2rem;
+    border-radius: var(--corner-radius);
+}
+
 /* ============================================================
    LOGS / ERRORS
    ============================================================ */
@@ -240,6 +256,15 @@ button:hover {
 
 .msg-error {
     color: var(--red-bg);
+}
+
+.msg-time {
+    color: light-dark(#ccc, #888);
+    display: inline-block;
+}
+
+.msg-block {
+    display: inline-flex;
 }
 
 /* ============================================================

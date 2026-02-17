@@ -12,12 +12,15 @@
 
 <body>
 
+    <button id="theme-toggle" class="theme-toggle">Theme: System</button>
+
     <h1>Snake Dojo</h1>
+
 
     <div id="elm-node"></div>
 
     <details>
-        <summary>Debug Terminal</summary>
+        <summary>Terminal Output</summary>
         <div id="terminal">Loading WebAssembly...</div>
     </details>
 
@@ -39,12 +42,36 @@
 
         const term = document.getElementById("terminal");
 
+        const start_time = Date.now();
+
         function termPrint(text, className = '') {
+            const elapsed = Math.floor((Date.now() - start_time) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+
+            const timestamp = `[${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}]`;
+
             const line = document.createElement('div');
             if (className) line.className = className;
-            line.textContent = text;
+
+            // Create timestamp span
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'msg-time';
+            timeSpan.textContent = timestamp + ' ';
+
+            line.appendChild(timeSpan);
+            
+            // Add the message content
+            const contentSpan = document.createElement('span');
+            contentSpan.textContent = text;
+            contentSpan.className = 'msg-block';
+            line.appendChild(contentSpan);
+
             term.appendChild(line);
             term.scrollTop = term.scrollHeight;
+
+            // Also log to browser console
+            console.log(text)
         }
 
         // Create parser instance
@@ -55,8 +82,7 @@
             // Display in terminal for debugging
             switch (message.type) {
                 case 'board':
-                    termPrint(`[BOARD]`, 'msg-board');
-                    termPrint(message.content, 'msg-board');
+                    termPrint(`[BOARD]\n${message.content}`, 'msg-board');
                     break;
                 case 'log':
                     termPrint(`[LOG] ${message.content}`, 'msg-log');
@@ -83,6 +109,7 @@
 
         // Start the WASM module
         createModule({
+            noInitialRun: true,
             print: (text) => {
                 parser.processStdout(text + '\n');
             },
@@ -96,6 +123,18 @@
 
             // Expose Module globally if you need to call functions from Elm
             window.WasmModule = Module;
+        });
+    </script>
+
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const themes = ['system', 'light', 'dark'];
+        let currentThemeIndex = 0;
+
+        themeToggle.addEventListener('click', () => {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            document.body.className = themes[currentThemeIndex]
+            themeToggle.textContent = `Theme: ${themes[currentThemeIndex].charAt(0).toUpperCase() + themes[currentThemeIndex].slice(1)}`;
         });
     </script>
 </body>

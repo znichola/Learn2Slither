@@ -123,24 +123,12 @@ class WasmOutputParser {
 function createModuleWithParser(messageTypes) {
     const parser = new WasmOutputParser(messageTypes);
 
-    // You can customize message handling
+    // This is redefined in the index.html with usecase spesific message handling
     parser.onMessage = (message) => {
-        switch (message.type) {
-            case 'board':
-                console.log('%c[BOARD]', 'color: green; font-weight: bold');
-                console.log(message.content);
-                break;
-            case 'log':
-                console.log('%c[LOG]', 'color: blue', message.content);
-                break;
-            case 'error':
-                console.error('%c[ERROR]', 'color: red; font-weight: bold', message.content);
-                break;
-            default:
-                console.log(`[${message.type.toUpperCase()}]`, message.content);
-        }
+        console.log(`[WASM PARSER] - ${message.type.toUpperCase()} :`, message.content)
     };
 
+    // Used by emscripted when c++ std::cout <<, std::cerr, or print are called
     const Module = {
         print: (text) => {
             parser.processStdout(text + '\n');
