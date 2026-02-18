@@ -20,7 +20,7 @@ endif
 LEAKS_CHECK = valgrind
 EXAMPLE_FILE = example_file.txt
 
-FILES = environment interpreter agent trainer wasm_stdin
+FILES = environment interpreter agent trainer bridge
 
 MAIN_SRC = src/main.cpp
 MAIN_OBJ = obj/main.o
@@ -137,7 +137,10 @@ $(WASM_NAME) : $(OBJS) $(MAIN_OBJ)
 		-s EXPORT_ES6=1 \
 		-s ENVIRONMENT=web \
 		-s ALLOW_MEMORY_GROWTH=1 \
-		-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain'] \
+		-s ASYNCIFY \
+		-s "ASYNCIFY_IMPORTS=['js_wait_for_input']" \
+		-s "EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain']" \
+		-s "EXPORTED_FUNCTIONS=['_main','_bridge_deliver','_free', 'stringToNewUTF8','lengthBytesUTF8']" \
 		-s NO_DISABLE_EXCEPTION_CATCHING \
 		$(BUILD_INFO) \
 		-I$(INCS_PATH) $(SRCS) $(MAIN_SRC) \

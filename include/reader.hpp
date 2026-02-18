@@ -8,6 +8,8 @@
 #include <string_view>
 #include <variant>
 
+#include "bridge.hpp"
+
 namespace Reader {
 
 // ---------------------------------------------------------------------------
@@ -15,9 +17,9 @@ namespace Reader {
 // ---------------------------------------------------------------------------
 
 struct Start { std::string content; };
-struct Send { std::string content; };
+struct Step { std::string content; };
 
-using Message = std::variant<Start, Send>;
+using Message = std::variant<Start, Step>;
 
 class Parser {
 private:
@@ -30,7 +32,7 @@ private:
     // Message Patterns - 2/2
     static constexpr PatternEntry _patterns[] = {
         { "START_START[", "]START_END", [](std::string c) -> Message { return Start{std::move(c)}; } },
-        { "SEND_START[", "]SEND_END", [](std::string c) -> Message { return Send{std::move(c)}; } },
+        { "STEP_START[", "]STEP_END", [](std::string c) -> Message { return Step{std::move(c)}; } },
     };
 
 public:
@@ -41,14 +43,18 @@ public:
      * Returns false when stdin is closed (EOF), true otherwise.
      */
     bool read() {
-        char chunk[4096];
-        if (!std::cin.read(chunk, sizeof(chunk))) {
+#ifndef __EMSCRIPTEN__
+        std::string chunk;
+        if (!std::getline(std::cin, chunk)) {
             if (std::cin.gcount() > 0)
-                _buffer.append(chunk, std::cin.gcount());
+                _buffer.append(chunk).append("\n");
             extractAll();
             return false;
         }
         _buffer.append(chunk, std::cin.gcount());
+#else
+        _buffer = Bridge::waitForInput();
+#endif
         extractAll();
         return true;
     }
@@ -69,7 +75,6 @@ private:
     std::deque<Message> _queue;
 
     void extractAll() {
-        std::cout << "Read called, and BUFFER IS" << _buffer << "\n";
         bool modified = true;
         while (modified) {
             modified = false;

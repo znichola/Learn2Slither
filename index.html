@@ -35,7 +35,9 @@
         app.ports.sendToJs.subscribe((payload) => {
             console.log('[Elm→JS]', payload);
 
-            window.enqueueInput(`${payload.type.toUpperCase()}_START[\n${payload.value}\n]${payload.type.toUpperCase()}_END\n`);
+            const text = `${payload.type.toUpperCase()}_START[\n${payload.value}\n]${payload.type.toUpperCase()}_END\n`;
+            window.enqueueInput(text);
+            window.sendToWasm(text);
 
             if (payload.type === "step") {
                 // Later: call your WASM function
@@ -136,6 +138,30 @@
             window.WasmModule = Module;
         });
 
+        // Resolve function stored here while WASM is suspended
+        let _wasmResume = null;
+
+        // // Called by WASM via Asyncify — returns a Promise, which Asyncify awaits
+        // Module['js_wait_for_input'] = () => {
+        //     return new Promise((resolve) => {
+        //         _wasmResume = resolve;   // JS holds the key to resuming
+        //     });
+        // };
+
+        // Call this from anywhere (Elm port handler, button, etc.) to wake WASM
+        window.sendToWasm = (text) => {
+            const Module = window.WasmModule;
+            
+            const ptr = Module.stringToNewUTF8(text);
+            Module._bridge_deliver(ptr, Module.lengthBytesUTF8(text));
+            Module._free(ptr);
+
+            if (Module._pendingResume) {
+                const resume = Module._pendingResume;
+                Module._pendingResume = null;
+                resume();
+            }
+        };
 
     </script>
 
