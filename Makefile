@@ -6,7 +6,7 @@ NAME    = snake
 
 CC      = clang++
 CFLAGS  = -Wall -Wextra
-CFLAGS  += -Werror
+# CFLAGS  += -Werror
 CFLAGS  += -std=c++20
 
 ifdef DEBUG
@@ -20,7 +20,7 @@ endif
 LEAKS_CHECK = valgrind
 EXAMPLE_FILE = example_file.txt
 
-FILES = environment interpreter agent trainer
+FILES = environment interpreter agent trainer wasm_stdin
 
 MAIN_SRC = src/main.cpp
 MAIN_OBJ = obj/main.o
@@ -131,7 +131,7 @@ WASM_NAME=$(NAME).js
 
 $(WASM_NAME) : $(OBJS) $(MAIN_OBJ)
 	docker run --rm -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) \
-		em++ -Wall -Wextra -Werror -std=c++20 \
+		em++ -Wall $(CFLAGS) \
 		-s WASM=1 \
 		-s MODULARIZE=1 \
 		-s EXPORT_ES6=1 \

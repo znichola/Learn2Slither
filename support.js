@@ -1,5 +1,5 @@
 /**
- * WASM Output Parser for C++ Logger
+ * WASM Output Parser for C++ Logger - for mirror see /include/reader.hpp
  * 
  * Parses structured messages from C++ stdout/stderr that follow the pattern:
  * TYPE_START[
@@ -115,33 +115,6 @@ class WasmOutputParser {
         this.stdoutBuffer = '';
         this.stderrBuffer = '';
     }
-}
-
-/**
- * Setup Emscripten Module with output parser
- */
-function createModuleWithParser(messageTypes) {
-    const parser = new WasmOutputParser(messageTypes);
-
-    // This is redefined in the index.html with usecase spesific message handling
-    parser.onMessage = (message) => {
-        console.log(`[WASM PARSER] - ${message.type.toUpperCase()} :`, message.content)
-    };
-
-    // Used by emscripted when c++ std::cout <<, std::cerr, or print are called
-    const Module = {
-        print: (text) => {
-            parser.processStdout(text + '\n');
-        },
-        printErr: (text) => {
-            parser.processStderr(text + '\n');
-        },
-        onRuntimeInitialized: () => {
-            console.log('WASM Runtime initialized');
-        }
-    };
-
-    return { Module, parser };
 }
 
 // Export for use in browser or Node.js

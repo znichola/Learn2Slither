@@ -63,6 +63,7 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 
 type Msg
     = SendStep String
+    | SendStart
     | GotWasmMessage Decode.Value
     | StartReplay
     | ReplayTick Time.Posix
@@ -106,8 +107,18 @@ update msg model =
             let
                 payload =
                     Encode.object
-                        [ ( "type", Encode.string "step" )
+                        [ ( "type", Encode.string "STEP" )
                         , ( "value", Encode.string value )
+                        ]
+            in
+            ( model, sendToJs payload )
+
+        SendStart ->
+            let
+                payload =
+                    Encode.object
+                        [ ( "type", Encode.string "START" )
+                        , ( "value", Encode.string "start playing" )
                         ]
             in
             ( model, sendToJs payload )
@@ -323,6 +334,7 @@ viewConfig =
         [ div [] [ text "foobar" ]
         , input [] [ text "text" ]
         , button [ onClick StartReplay ] [ text "Replay" ]
+        , button [ onClick SendStart ] [ text "Start" ]
         ]
 
 

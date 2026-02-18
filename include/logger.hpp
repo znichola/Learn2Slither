@@ -1,103 +1,56 @@
 #pragma once
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <string_view>
 
-struct LoggerConfig {
-    bool enableBoardOutput = true;
-    bool enableStdoutLogs = true;
-    bool enableErrors = true;
-};
+namespace Logger {
 
-class Logger {
-private:
-    enum class MessageType { Board, Log, Error };
-
-    struct MessageSpec {
-        const char* startMarker;
-        const char* endMarker;
-        std::ostream* stream;
-        bool enabled;
-    };
-
-    class LogStream {
-    public:
-        LogStream(Logger* logger, MessageType type)
-            : logger_(logger), type_(type) {}
-
-        ~LogStream() {
-            logger_->flush(type_, ss_.str());
-        }
-
-        template<typename T>
-        LogStream& operator<<(const T& value) {
-            ss_ << value;
-            return *this;
-        }
-
-        LogStream& operator<<(std::ostream& (*manip)(std::ostream&)) {
-            manip(ss_);
-            return *this;
-        }
-
-    private:
-        Logger* logger_;
-        MessageType type_;
-        std::stringstream ss_;
-    };
-
+class LogStream {
 public:
-    LoggerConfig config_;
+    LogStream(std::ostream &stream, std::string_view start, std::string_view end)
+        : _stream(stream), _start(start), _end(end) {}
 
-    Logger(const LoggerConfig& config = LoggerConfig())
-        : config_(config) {}
+    ~LogStream() {
+        std::string_view message = _ss.view();
 
-    LogStream board() {
-        return LogStream(this, MessageType::Board);
+        while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))
+            message.remove_suffix(1);
+
+        if (message.empty())
+            return;
+
+        _stream << _start << '\n' << message << '\n' << _end << '\n';
+        _stream.flush();
     }
 
-    LogStream log() {
-        return LogStream(this, MessageType::Log);
+    template <typename T>
+    LogStream &operator<<(const T &value) {
+        _ss << value;
+        return *this;
     }
 
-    LogStream error() {
-        return LogStream(this, MessageType::Error);
+    LogStream &operator<<(std::ostream &(*manip)(std::ostream &)) {
+        manip(_ss);
+        return *this;
     }
 
 private:
-    MessageSpec getSpec(MessageType type) const {
-        switch(type) {
-            case MessageType::Board:
-                return {"BOARD_START[", "]BOARD_END",
-                        &std::cout, config_.enableBoardOutput};
-            case MessageType::Log:
-                return {"LOG_START[", "]LOG_END",
-                        &std::cout, config_.enableStdoutLogs};
-            case MessageType::Error:
-                return {"ERROR_START[", "]ERROR_END",
-                        &std::cerr, config_.enableErrors};
-        }
-        return {"", "", &std::cout, false}; // Should never reach
-    }
-
-    void flush(MessageType type, const std::string& message) {
-        if (message.empty()) return;
-
-        MessageSpec spec = getSpec(type);
-        if (!spec.enabled) return;
-
-        // Trim trailing newlines
-        std::string trimmed_message = message;
-        while (!trimmed_message.empty() && 
-            (trimmed_message.back() == '\n' || trimmed_message.back() == '\r')) {
-            trimmed_message.pop_back();
-        }
-
-        *spec.stream << spec.startMarker << std::endl;
-        *spec.stream << trimmed_message;
-        *spec.stream << std::endl << spec.endMarker << std::endl;
-        spec.stream->flush();
-    }
-
-    friend class LogStream;
+    std::ostream &_stream;
+    std::string_view _start;
+    std::string_view _end;
+    std::ostringstream _ss;
 };
+
+inline LogStream board() {
+    return {std::cout, "BOARD_START[", "]BOARD_END"};
+}
+
+inline LogStream log() {
+    return {std::cout, "LOG_START[", "]LOG_END"};
+}
+
+inline LogStream error() {
+    return {std::cerr, "ERROR_START[", "]ERROR_END"};
+}
+
+}

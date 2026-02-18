@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snake Dojo</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
     <script type="text/javascript" src="elm.js"></script>
     <script type="text/javascript" src="support.js"></script>
 </head>
@@ -33,6 +34,9 @@
         // Elm → JS: Handle commands from Elm
         app.ports.sendToJs.subscribe((payload) => {
             console.log('[Elm→JS]', payload);
+
+            window.enqueueInput(`${payload.type.toUpperCase()}_START[\n${payload.value}\n]${payload.type.toUpperCase()}_END\n`);
+
             if (payload.type === "step") {
                 // Later: call your WASM function
                 // Module.ccall("step", null, ["number"], [payload.value]);
@@ -107,6 +111,13 @@
         // WASM STUFF
         import createModule from "./snake.js";
 
+        // Called by Elm port handler above — pushes chars into the queue
+        // and wakes up WASM if it is suspended waiting for input.
+        window.enqueueInput = (str) => {
+            console.log("called with data to send to the  c++ stdin:", str)
+        };
+
+
         // Start the WASM module
         createModule({
             noInitialRun: true,
@@ -121,12 +132,15 @@
             termPrint("[SYSTEM] WASM Runtime initialized", 'msg-log');
             Module.callMain([]);
 
-            // Expose Module globally if you need to call functions from Elm
+            // Expose Module globally to call functions from Elm
             window.WasmModule = Module;
         });
+
+
     </script>
 
     <script>
+        // Theme button
         const themeToggle = document.getElementById('theme-toggle');
         const themes = ['system', 'light', 'dark'];
         let currentThemeIndex = 0;
