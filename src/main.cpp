@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <random>
+#include <unordered_map>
 
 #include "environment.hpp"
 #include "interpreter.hpp"
@@ -59,6 +60,8 @@ WWWWWWWWWWWW
 }
 
 static void handle(const Reader::Start& m, GameState& state) {
+    (void)m;
+
     std::initializer_list<Move> moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Down, Move::Left, Move::Left, Move::Up, Move::Left, Move::Left};
 
     Logger::log() << "Game initialized with seed: " << state.seed;

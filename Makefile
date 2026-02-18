@@ -6,7 +6,7 @@ NAME    = snake
 
 CC      = clang++
 CFLAGS  = -Wall -Wextra
-# CFLAGS  += -Werror
+CFLAGS  += -Werror
 CFLAGS  += -std=c++20
 
 ifdef DEBUG
