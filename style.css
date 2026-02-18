@@ -58,7 +58,8 @@
 }
 
 body {
-    margin: 0;
+    margin: auto;
+    max-width: 80rem;
     padding: 1.25rem;
     font-family: "Courier New", monospace;
     font-size: 1rem;
