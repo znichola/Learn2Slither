@@ -15,21 +15,25 @@ public:
         Move::Up, Move::Down, Move::Left, Move::Right
     };
 
-    std::unordered_map<State, std::array<float, 4>, State::Hash> q_table;
-
     // Values for updating the Q function
-    float alpha = 0.4f;       // learning rate : 0 < a <= 1
-    float gamma = 0.9f;       // discount factor : 0 < g <= 1
-    float epsilon = 0.1f;     // exploration random probability
-    unsigned max_iter = 1000; // to combat infinate loops
-    unsigned _iteration = 0;
+    float alpha;
+    float gamma;
+    float epsilon;
+    float epsilon_decay;
+    float epsilon_min;
 
     // Random for epsilon greedy
     std::mt19937 rng{std::random_device{}()};
 
+    std::unordered_map<State, std::array<float, 4>, State::Hash> q_table;
+
     Move chooseAction(const Vision & vision);
 
-    void updateQtable(const Vision &vision, Move move, float reward,
+    void updateQtable(const Vision &vision,
+                      Move move,
+                      float reward,
                       const Vision &next_vision);
+
+    void decayEpsilon();
 };
 

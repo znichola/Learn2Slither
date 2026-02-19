@@ -2,9 +2,9 @@ port module Main exposing (main)
 
 import Browser
 import Browser.Events
-import Html exposing (Html, button, div, h3, input, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, style)
-import Html.Events exposing (onClick)
+import Html exposing (Html, button, div, h3, input, label, span, table, tbody, td, text, tr)
+import Html.Attributes exposing (class, placeholder, step, style, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time
@@ -19,6 +19,7 @@ type alias Model =
     , logs : List LogType
     , receivedMessages : List WasmMessage
     , replayIndex : Maybe Int
+    , config : Config
     }
 
 
@@ -46,9 +47,61 @@ init _ =
       , logs = []
       , receivedMessages = []
       , replayIndex = Nothing
+      , config = defaultConfig
       }
     , Cmd.none
     )
+
+
+type alias Config =
+    { episodes : Int
+    , maxSteps : Int
+    , boardX : Int
+    , boardY : Int
+    , alpha : Float
+    , gamma : Float
+    , epsilon : Float
+    , epsilonDecay : Float
+    , epsilonMin : Float
+    , rewardAdvance : Float
+    , rewardGreen : Float
+    , rewardRed : Float
+    , rewardDeath : Float
+    }
+
+
+defaultConfig : Config
+defaultConfig =
+    { episodes = 10
+    , maxSteps = 100
+    , boardX = 10
+    , boardY = 10
+    , alpha = 0.4
+    , gamma = 0.9
+    , epsilon = 0.1
+    , epsilonDecay = 0.995
+    , epsilonMin = 0.01
+    , rewardAdvance = 0.0
+    , rewardGreen = 10000.0
+    , rewardRed = 1.0
+    , rewardDeath = -10.0
+    }
+
+
+type ConfigField
+    = Episodes
+    | MaxSteps
+    | BoardX
+    | BoardY
+    | Alpha
+    | Gamma
+    | Epsilon
+    | EpsilonDecay
+    | EpsilonMin
+    | RewardAdvance
+    | RewardGreen
+    | RewardRed
+    | RewardDeath
 
 
 
@@ -68,9 +121,11 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 type Msg
     = SendStep String
     | SendStart
+    | SendTrain Encode.Value
     | GotWasmMessage Decode.Value
     | StartReplay
     | ReplayTick Time.Posix
+    | UpdateConfig ConfigField String
 
 
 applyWasmMessage : WasmMessage -> Model -> Model
@@ -125,7 +180,17 @@ update msg model =
                         , ( "value", Encode.string "start playing" )
                         ]
             in
-            ( model, sendToJs payload )
+            ( { model | logs = [ Log "Sent start command to WASM" ], receivedMessages = [] }, sendToJs payload )
+
+        SendTrain object ->
+            let
+                payload =
+                    Encode.object
+                        [ ( "type", Encode.string "TRAIN" )
+                        , ( "value", object )
+                        ]
+            in
+            ( { model | logs = [ Log "Sent train command to WASM" ], receivedMessages = [] }, sendToJs payload )
 
         GotWasmMessage value ->
             case decodeWasmMessage value of
@@ -138,6 +203,13 @@ update msg model =
                     ( { model | logs = model.logs ++ [ Error "Failed to decode WASM message" ] }
                     , Cmd.none
                     )
+
+        UpdateConfig field str ->
+            ( { model
+                | config = updateConfig field str model.config
+              }
+            , Cmd.none
+            )
 
         StartReplay ->
             case model.replayIndex of
@@ -255,6 +327,49 @@ charToCell char =
             Empty
 
 
+updateConfig : ConfigField -> String -> Config -> Config
+updateConfig field value config =
+    case field of
+        Episodes ->
+            { config | episodes = parseInt value config.episodes }
+
+        MaxSteps ->
+            { config | maxSteps = parseInt value config.maxSteps }
+
+        BoardX ->
+            { config | boardX = parseInt value config.boardX }
+
+        BoardY ->
+            { config | boardY = parseInt value config.boardY }
+
+        Alpha ->
+            { config | alpha = parseFloat value config.alpha }
+
+        Gamma ->
+            { config | gamma = parseFloat value config.gamma }
+
+        Epsilon ->
+            { config | epsilon = parseFloat value config.epsilon }
+
+        EpsilonDecay ->
+            { config | epsilonDecay = parseFloat value config.epsilonDecay }
+
+        EpsilonMin ->
+            { config | epsilonMin = parseFloat value config.epsilonMin }
+
+        RewardAdvance ->
+            { config | rewardAdvance = parseFloat value config.rewardAdvance }
+
+        RewardGreen ->
+            { config | rewardGreen = parseFloat value config.rewardGreen }
+
+        RewardRed ->
+            { config | rewardRed = parseFloat value config.rewardRed }
+
+        RewardDeath ->
+            { config | rewardDeath = parseFloat value config.rewardDeath }
+
+
 
 -- VIEW
 
@@ -271,7 +386,9 @@ view model =
             [ viewLogs model.logs
             ]
         , div [ class "input-section" ]
-            [ viewConfig ]
+            [ viewButton model
+            , viewConfig model.config
+            ]
         ]
 
 
@@ -331,13 +448,86 @@ viewControles =
         ]
 
 
-viewConfig : Html Msg
-viewConfig =
-    div []
-        [ div [] [ text "foobar" ]
-        , input [] [ text "text" ]
-        , button [ onClick StartReplay ] [ text "Replay" ]
+viewField : String -> Html Msg -> Html Msg
+viewField labelText inputElement =
+    span [ class "config-field" ]
+        [ label []
+            [ text labelText ]
+        , inputElement
+        ]
+
+
+viewIntField : String -> ConfigField -> Int -> Html Msg
+viewIntField labelText field current =
+    viewField labelText <|
+        input
+            [ type_ "number"
+            , value (String.fromInt current)
+            , onInput (UpdateConfig field)
+            ]
+            []
+
+
+viewFloatField : String -> ConfigField -> Float -> Html Msg
+viewFloatField labelText field current =
+    viewField labelText <|
+        input
+            [ type_ "number"
+            , step "0.01"
+            , value (String.fromFloat current)
+            , onInput (UpdateConfig field)
+            ]
+            []
+
+
+viewConfig : Config -> Html Msg
+viewConfig config =
+    div [ class "config" ]
+        [ h3 [] [ text "Training Configuration" ]
+        , div
+            [ class "config-grid" ]
+            [ viewIntField "Episodes" Episodes config.episodes
+            , viewIntField "Max Steps" MaxSteps config.maxSteps
+            , viewIntField "Board X" BoardX config.boardX
+            , viewIntField "Board Y" BoardY config.boardY
+            , viewFloatField "Alpha" Alpha config.alpha
+            , viewFloatField "Gamma" Gamma config.gamma
+            , viewFloatField "Epsilon" Epsilon config.epsilon
+            , viewFloatField "Epsilon Decay" EpsilonDecay config.epsilonDecay
+            , viewFloatField "Epsilon Min" EpsilonMin config.epsilonMin
+            , viewFloatField "Reward Advance" RewardAdvance config.rewardAdvance
+            , viewFloatField "Reward Green" RewardGreen config.rewardGreen
+            , viewFloatField "Reward Red" RewardRed config.rewardRed
+            , viewFloatField "Reward Death" RewardDeath config.rewardDeath
+            ]
+        ]
+
+
+encodeConfig : Config -> Encode.Value
+encodeConfig config =
+    Encode.object
+        [ ( "EPISODES", Encode.int config.episodes )
+        , ( "MAX_STEPS", Encode.int config.maxSteps )
+        , ( "board_x", Encode.int config.boardX )
+        , ( "board_y", Encode.int config.boardY )
+        , ( "alpha", Encode.float config.alpha )
+        , ( "gamma", Encode.float config.gamma )
+        , ( "epsilon", Encode.float config.epsilon )
+        , ( "epsilon_decay", Encode.float config.epsilonDecay )
+        , ( "epsilon_min", Encode.float config.epsilonMin )
+        , ( "reward_advance", Encode.float config.rewardAdvance )
+        , ( "reward_green", Encode.float config.rewardGreen )
+        , ( "reward_red", Encode.float config.rewardRed )
+        , ( "reward_death", Encode.float config.rewardDeath )
+        ]
+
+
+viewButton : Model -> Html Msg
+viewButton model =
+    div [ class "control-buttons" ]
+        [ button [ onClick StartReplay ] [ text "Replay" ]
         , button [ onClick SendStart ] [ text "Start" ]
+        , button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
         ]
 
 
@@ -368,7 +558,27 @@ viewLog entry =
 
 
 
--- KEYBOARD HELPERS
+-- HELPERS
+
+
+parseInt : String -> Int -> Int
+parseInt str fallback =
+    case String.toInt str of
+        Just n ->
+            n
+
+        Nothing ->
+            fallback
+
+
+parseFloat : String -> Float -> Float
+parseFloat str fallback =
+    case String.toFloat str of
+        Just n ->
+            n
+
+        Nothing ->
+            fallback
 
 
 keyToStepMsg : String -> Maybe Msg
@@ -414,7 +624,7 @@ subscriptions model =
         [ receiveFromJs GotWasmMessage
         , case model.replayIndex of
             Just _ ->
-                Time.every 200 ReplayTick
+                Time.every 60 ReplayTick
 
             Nothing ->
                 Sub.none

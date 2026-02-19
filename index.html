@@ -33,16 +33,22 @@
 
         // Elm → JS: Handle commands from Elm
         app.ports.sendToJs.subscribe((payload) => {
+            let value;
+            if (payload.type == "STEP") {
+                value = payload.value;
+            } else {
+                value = JSON.stringify(payload.value);
+            }
             console.log('[Elm→JS]', payload);
 
-            const text = `${payload.type.toUpperCase()}_START[\n${payload.value}\n]${payload.type.toUpperCase()}_END\n`;
+            const text = `${payload.type.toUpperCase()}_START[\n${value}\n]${payload.type.toUpperCase()}_END\n`;
             window.enqueueInput(text);
             window.sendToWasm(text);
 
             if (payload.type === "step") {
                 // Later: call your WASM function
-                // Module.ccall("step", null, ["number"], [payload.value]);
-                termPrint(`[Elm→WASM] step(${payload.value})`, 'msg-log');
+                // Module.ccall("step", null, ["number"], [value]);
+                termPrint(`[Elm→WASM] step(${value})`, 'msg-log');
             }
         });
 

@@ -18,8 +18,9 @@ namespace Reader {
 
 struct Start { std::string content; };
 struct Step { std::string content; };
+struct Train { std::string content; };
 
-using Message = std::variant<Start, Step>;
+using Message = std::variant<Start, Step, Train>;
 
 class Parser {
 private:
@@ -33,6 +34,7 @@ private:
     static constexpr PatternEntry _patterns[] = {
         { "START_START[", "]START_END", [](std::string c) -> Message { return Start{std::move(c)}; } },
         { "STEP_START[", "]STEP_END", [](std::string c) -> Message { return Step{std::move(c)}; } },
+        { "TRAIN_START[", "]TRAIN_END", [](std::string c) -> Message { return Train{std::move(c)}; } },
     };
 
 public:
