@@ -15,11 +15,15 @@ import Time
 
 type alias Model =
     { board : Maybe Board
-    , logs : List String
-    , errors : List String
+    , logs : List LogType
     , receivedMessages : List WasmMessage
     , replayIndex : Maybe Int
     }
+
+
+type LogType
+    = Error String
+    | Log String
 
 
 type alias Board =
@@ -39,7 +43,6 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { board = Nothing
       , logs = []
-      , errors = []
       , receivedMessages = []
       , replayIndex = Nothing
       }
@@ -91,10 +94,10 @@ applyContent wasmMsg model =
             { model | board = parseBoard wasmMsg.content }
 
         "log" ->
-            { model | logs = model.logs ++ [ wasmMsg.content ] }
+            { model | logs = model.logs ++ [ Log wasmMsg.content ] }
 
         "error" ->
-            { model | errors = model.errors ++ [ wasmMsg.content ] }
+            { model | logs = model.logs ++ [ Error wasmMsg.content ] }
 
         _ ->
             model
@@ -131,7 +134,7 @@ update msg model =
                     )
 
                 Err _ ->
-                    ( { model | errors = model.errors ++ [ "Failed to decode WASM message" ] }
+                    ( { model | logs = model.logs ++ [ Error "Failed to decode WASM message" ] }
                     , Cmd.none
                     )
 
@@ -147,7 +150,7 @@ update msg model =
                     in
                     ( { model
                         | replayIndex = Just lastIndex
-                        , logs = model.logs ++ [ "Starting replay.." ]
+                        , logs = model.logs ++ [ Log "Starting replay.." ]
                       }
                     , Cmd.none
                     )
@@ -265,7 +268,6 @@ view model =
             ]
         , div [ class "info-section" ]
             [ viewLogs model.logs
-            , viewErrors model.errors
             ]
         , div [ class "input-section" ]
             [ viewConfig ]
@@ -338,7 +340,7 @@ viewConfig =
         ]
 
 
-viewLogs : List String -> Html Msg
+viewLogs : List LogType -> Html Msg
 viewLogs logs =
     div [ class "logs-container" ]
         [ h3 [] [ text "Logs" ]
@@ -347,22 +349,21 @@ viewLogs logs =
                 [ text "No logs yet" ]
 
              else
-                List.map (\log -> div [ class "log-entry" ] [ text log ]) logs
+                List.map viewLog (List.reverse logs)
             )
         ]
 
 
-viewErrors : List String -> Html Msg
-viewErrors errors =
-    if List.isEmpty errors then
-        text ""
+viewLog : LogType -> Html Msg
+viewLog entry =
+    case entry of
+        Log message ->
+            div [ class "log-entry" ]
+                [ text message ]
 
-    else
-        div [ class "errors-container" ]
-            [ h3 [] [ text "Errors" ]
-            , div [ class "errors" ]
-                (List.map (\err -> div [ class "error-entry" ] [ text err ]) errors)
-            ]
+        Error message ->
+            div [ class "error-entry" ]
+                [ text message ]
 
 
 
