@@ -60,3 +60,7 @@ void Agent::updateQtable(const Vision &vision, Move move, float reward,
         alpha * (reward + gamma * max_next_q - q_values[action_idx]);
 }
 
+
+void Agent::decayEpsilon() {
+    epsilon = std::max(epsilon_min, epsilon * epsilon_decay);
+}

@@ -112,6 +112,12 @@ summary {
     height: 100%;
 }
 
+.input-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
 
 /* ============================================================
    GAME BOARD
@@ -221,6 +227,7 @@ button:hover {
     margin: 0.25rem 0;
     border-left: 0.1875rem solid;
     background-color: var(--empty-bg);
+    overflow-wrap: anywhere;
 }
 
 .log-entry {
@@ -230,6 +237,51 @@ button:hover {
 .error-entry {
     border-color: var(--red-bg);
     font-weight: bold;
+}
+
+/* ============================================================
+   CONFIG GRID
+   ============================================================ */
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: var(--corner-radius);
+    background-color: var(--panel-bg);
+    border: 0.0625rem solid var(--panel-border);
+}
+
+.config-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.config-field label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: var(--accent);
+}
+
+.config-field input {
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--corner-radius);
+    border: 0.0625rem solid var(--panel-border);
+    background-color: var(--empty-bg);
+    color: var(--text);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.config-field input:focus {
+    outline: none;
+    border-color: var(--blue-bg);
+    box-shadow: 0 0 0 2px rgba(92, 124, 255, 0.2);
+}
+
+.config-field input:hover {
+    border-color: var(--blue-bg);
 }
 
 /* ============================================================

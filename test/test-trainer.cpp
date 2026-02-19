@@ -10,8 +10,6 @@ int main() {
     std::cout << "Testing Trainer\n";
     std::cout << "===================\n";
 
-    train();
-
     return ret;
 }
 
