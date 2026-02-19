@@ -58,7 +58,8 @@
 }
 
 body {
-    margin: 0;
+    margin: auto;
+    max-width: 80rem;
     padding: 1.25rem;
     font-family: "Courier New", monospace;
     font-size: 1rem;
@@ -89,17 +90,16 @@ summary {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.25rem;
+    align-items: stretch;
 }
 
 .info-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+    height: 0;
+    min-height: 100%;
 }
 
 .game-section,
-.logs-container,
-.errors-container {
+.logs-container {
     padding: 1rem;
     border-radius: var(--corner-radius);
     border: 0.12rem solid var(--panel-border);
@@ -109,11 +109,9 @@ summary {
 
 .logs-container {
     border-color: var(--blue-bg);
+    height: 100%;
 }
 
-.errors-container {
-    border-color: var(--red-bg);
-}
 
 /* ============================================================
    GAME BOARD
@@ -209,11 +207,12 @@ button:hover {
 /* ============================================================
    LOGS / ERRORS
    ============================================================ */
-.logs,
-.errors {
-    max-height: 15.625rem;
-    overflow-y: auto;
+.logs {
+    overflow-y: scroll;
     font-size: 0.75rem;
+    display: flex;
+    flex-direction: column-reverse;
+    max-height: 92%;
 }
 
 .log-entry,
