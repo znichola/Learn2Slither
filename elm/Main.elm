@@ -1,6 +1,7 @@
 port module Main exposing (main)
 
 import Browser
+import Browser.Events
 import Html exposing (Html, button, div, h3, input, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
@@ -367,6 +368,43 @@ viewLog entry =
 
 
 
+-- KEYBOARD HELPERS
+
+
+keyToStepMsg : String -> Maybe Msg
+keyToStepMsg key =
+    case key of
+        "ArrowUp" ->
+            Just (SendStep "UP")
+
+        "ArrowDown" ->
+            Just (SendStep "DOWN")
+
+        "ArrowLeft" ->
+            Just (SendStep "LEFT")
+
+        "ArrowRight" ->
+            Just (SendStep "RIGHT")
+
+        _ ->
+            Nothing
+
+
+arrowKeyDecoder : Decode.Decoder Msg
+arrowKeyDecoder =
+    Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\key ->
+                case keyToStepMsg key of
+                    Just msg ->
+                        Decode.succeed msg
+
+                    Nothing ->
+                        Decode.fail "Not an arrow key"
+            )
+
+
+
 -- SUBSCRIPTIONS
 
 
@@ -380,6 +418,7 @@ subscriptions model =
 
             Nothing ->
                 Sub.none
+        , Browser.Events.onKeyDown (Decode.map identity arrowKeyDecoder)
         ]
 
 

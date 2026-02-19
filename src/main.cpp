@@ -95,7 +95,7 @@ static void handle(const Reader::Step& m, GameState& state) {
     Logger::log() << "Got a move command " << m.content;
 
     if (state.state == GameState::GS::GameOver) {
-        Logger::log() << "Sorry game over! restart if you want";
+        Logger::error() << "Sorry game over! restart if you want";
         return ;
     }
 
@@ -117,8 +117,9 @@ static void handle(const Reader::Step& m, GameState& state) {
     state.board = newBoard;
 
     if (moveRes == MoveRes::Death) {
-        state.state = GameState::GS::Playing;
+        state.state = GameState::GS::GameOver;
     }
+
 
     Logger::log() << "Result: " << moveRes;
     Logger::board() << state.board;
