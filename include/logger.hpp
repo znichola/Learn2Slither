@@ -53,4 +53,8 @@ inline LogStream error() {
     return {std::cerr, "ERROR_START[", "]ERROR_END"};
 }
 
+inline LogStream episode_done() {
+    return {std::cout, "EPISODE_DONE_START[", "]EPISODE_DONE_END"};
+}
+
 }

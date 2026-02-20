@@ -30,9 +30,13 @@ public:
     Move chooseAction(const Vision & vision);
 
     void updateQtable(const Vision &vision,
-                      Move move,
-                      float reward,
-                      const Vision &next_vision);
+                        Move move,
+                        float reward,
+                        const Vision &next_vision);
+
+    void updateQtableOnDeath(const Vision &vision,
+                        Move move, 
+                        float reward);
 
     void decayEpsilon();
 };

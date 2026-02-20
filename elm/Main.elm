@@ -55,7 +55,9 @@ init _ =
 
 type alias Config =
     { episodes : Int
+    , batchSize : Int
     , maxSteps : Int
+    , frame_time_ms : Int
     , boardX : Int
     , boardY : Int
     , alpha : Float
@@ -73,7 +75,9 @@ type alias Config =
 defaultConfig : Config
 defaultConfig =
     { episodes = 10
+    , batchSize = 1
     , maxSteps = 100
+    , frame_time_ms = 100
     , boardX = 10
     , boardY = 10
     , alpha = 0.4
@@ -90,7 +94,9 @@ defaultConfig =
 
 type ConfigField
     = Episodes
+    | BatchSize
     | MaxSteps
+    | FrameTime
     | BoardX
     | BoardY
     | Alpha
@@ -155,8 +161,14 @@ applyContent wasmMsg model =
         "error" ->
             { model | logs = model.logs ++ [ Error wasmMsg.content ] }
 
+        "episode_done" ->
+            { model
+                | logs = model.logs ++ [ Log wasmMsg.content ]
+                , replayIndex = Just (List.length model.receivedMessages - 1)
+            }
+
         _ ->
-            model
+            { model | logs = model.logs ++ [ Error ("unknown message type " ++ wasmMsg.content) ] }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -249,18 +261,23 @@ update msg model =
 
                         Just wasmMsg ->
                             let
-                                updatedModel =
-                                    applyContent wasmMsg model
-
-                                nextIndex =
+                                ( updatedModel, nextIndex, cmd ) =
                                     if idx <= 0 then
-                                        Nothing
+                                        ( applyContent wasmMsg { model | receivedMessages = [] }
+                                        , Nothing
+                                        , sendToJs
+                                            (Encode.object
+                                                [ ( "type", Encode.string "RESUME_TRAIN" )
+                                                , ( "value", Encode.string "continue" )
+                                                ]
+                                            )
+                                        )
 
                                     else
-                                        Just (idx - 1)
+                                        ( applyContent wasmMsg model, Just (idx - 1), Cmd.none )
                             in
                             ( { updatedModel | replayIndex = nextIndex }
-                            , Cmd.none
+                            , cmd
                             )
 
 
@@ -333,8 +350,14 @@ updateConfig field value config =
         Episodes ->
             { config | episodes = parseInt value config.episodes }
 
+        BatchSize ->
+            { config | batchSize = parseInt value config.batchSize }
+
         MaxSteps ->
             { config | maxSteps = parseInt value config.maxSteps }
+
+        FrameTime ->
+            { config | frame_time_ms = parseInt value config.frame_time_ms }
 
         BoardX ->
             { config | boardX = parseInt value config.boardX }
@@ -487,7 +510,9 @@ viewConfig config =
         , div
             [ class "config-grid" ]
             [ viewIntField "Episodes" Episodes config.episodes
+            , viewIntField "Batch Size" BatchSize config.batchSize
             , viewIntField "Max Steps" MaxSteps config.maxSteps
+            , viewIntField "Frame Time (ms)" FrameTime config.frame_time_ms
             , viewIntField "Board X" BoardX config.boardX
             , viewIntField "Board Y" BoardY config.boardY
             , viewFloatField "Alpha" Alpha config.alpha
@@ -507,7 +532,9 @@ encodeConfig : Config -> Encode.Value
 encodeConfig config =
     Encode.object
         [ ( "EPISODES", Encode.int config.episodes )
+        , ( "BATCH_SIZE", Encode.int config.batchSize )
         , ( "MAX_STEPS", Encode.int config.maxSteps )
+        , ( "frame_time_ms", Encode.int config.frame_time_ms )
         , ( "board_x", Encode.int config.boardX )
         , ( "board_y", Encode.int config.boardY )
         , ( "alpha", Encode.float config.alpha )
@@ -624,7 +651,7 @@ subscriptions model =
         [ receiveFromJs GotWasmMessage
         , case model.replayIndex of
             Just _ ->
-                Time.every 60 ReplayTick
+                Time.every (toFloat model.config.frame_time_ms) ReplayTick
 
             Nothing ->
                 Sub.none

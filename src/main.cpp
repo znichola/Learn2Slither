@@ -9,7 +9,7 @@
 #include "trainer.hpp"
 #include "configParser.hpp"
 
-struct GameState {
+struct AppState {
     enum class GS { Playing, GameOver };
 
     Board board;
@@ -17,21 +17,24 @@ struct GameState {
     std::mt19937 rng;
 
     GS state;
+
+    Trainer trainer;
 };
 
-static void handle(const Reader::Start& m, GameState& state);
-static void handle(const Reader::Step& m, GameState& state);
-static void handle(const Reader::Train& m, GameState& state);
+static void handle(const Reader::Start& m, AppState& state);
+static void handle(const Reader::Step& m, AppState& state);
+static void handle(const Reader::Train& m, AppState& state);
+static void handle(const Reader::ResumeTrain& m, AppState& state);
 
-static void dispatch(const Reader::Message& msg, GameState& state) {
+static void dispatch(const Reader::Message& msg, AppState& state) {
     std::visit([&](auto&& m) { handle(m, state); }, msg);
 }
 
-GameState initState();
+AppState initState();
 
 int main() {
 
-    GameState state = initState();
+    AppState state = initState();
     
     Reader::Parser parser;
 
@@ -45,7 +48,7 @@ int main() {
     Logger::log() << "Passed the blocking read in C++";
 }
 
-static void handle(const Reader::Train& m, GameState& state) {
+static void handle(const Reader::Train& m, AppState& state) {
     (void)state;
 
     Logger::log() << "Got a train command " << m.content;
@@ -54,25 +57,32 @@ static void handle(const Reader::Train& m, GameState& state) {
 
     Logger::log() << "Parsed config: " 
         << "EPISODES=" << config.EPISODES << "\n"
-        << "MAX_STEPS=" << config.MAX_STEPS << ", "
-        << "board_x=" << config.board_x << ", "
-        << "board_y=" << config.board_y << ", "
-        << "alpha=" << config.alpha << ", "
-        << "gamma=" << config.gamma << ", "
-        << "epsilon=" << config.epsilon << ", "
-        << "epsilon_decay=" << config.epsilon_decay << ", "
-        << "epsilon_min=" << config.epsilon_min << ", "
-        << "reward_advance=" << config.reward_advance << ", "
-        << "reward_green=" << config.reward_green << ", "
-        << "reward_red=" << config.reward_red << ", "
-        << "reward_death=" << config.reward_death;
+        << ", batch_size=" << config.BATCH_SIZE
+        << ", frame_time_ms=" << config.frame_time_ms
+        << ", MAX_STEPS=" << config.MAX_STEPS
+        << ", board_x=" << config.board_x
+        << ", board_y=" << config.board_y
+        << ", alpha=" << config.alpha
+        << ", gamma=" << config.gamma
+        << ", epsilon=" << config.epsilon
+        << ", epsilon_decay=" << config.epsilon_decay
+        << ", epsilon_min=" << config.epsilon_min
+        << ", reward_advance=" << config.reward_advance
+        << ", reward_green=" << config.reward_green
+        << ", reward_red=" << config.reward_red
+        << ", reward_death=" << config.reward_death
+        ;
 
-    Trainer trainer(config);
-    trainer.train();
+    state.trainer =  Trainer(config);
+    state.trainer.train();
 }
 
+static void handle(const Reader::ResumeTrain& m, AppState& state) {
+    (void)m;
+    state.trainer.train();
+}
 
-GameState initState() {
+AppState initState() {
         auto board = Board(R"(
 WWWWWWWWWWWW
 W          W
@@ -89,10 +99,10 @@ WWWWWWWWWWWW
 )");
     int seed = 42;
     std::mt19937 rng(seed);
-    return GameState{board, seed, rng, GameState::GS::Playing };
+    return AppState{board, seed, rng, AppState::GS::Playing, Trainer(Trainer::Config{})};
 }
 
-static void handle(const Reader::Start& m, GameState& state) {
+static void handle(const Reader::Start& m, AppState& state) {
     (void)m;
 
     std::initializer_list<Move> moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Down, Move::Left, Move::Left, Move::Up, Move::Left, Move::Left};
@@ -100,20 +110,20 @@ static void handle(const Reader::Start& m, GameState& state) {
     Logger::log() << "Game initialized with seed: " << state.seed;
     Logger::board() << state.board;
 
-    state.state = GameState::GS::Playing;
+    state.state = AppState::GS::Playing;
 
     return ;
 
     int i = 1;
     for (auto it = moves.begin(); it != moves.end(); ++it) {
         auto move = *it;
-        auto [newBoard, moveRes] = state.board.doMove(move, state.rng());
+        Board newBoard = state.board.doMove(move, state.rng());
         state.board = newBoard;
 
-        Logger::log() << "Move " << i << ": " << move << " - Result: " << moveRes;
+        Logger::log() << "Move " << i << ": " << move << " - Result: " << newBoard.moveRes;
         Logger::board() << state.board;
 
-        if (moveRes == MoveRes::Death) {
+        if (newBoard.moveRes == MoveRes::Death) {
             Logger::error() << "Game Over: Snake died!";
             break;
         }
@@ -121,10 +131,10 @@ static void handle(const Reader::Start& m, GameState& state) {
     }
 }
 
-static void handle(const Reader::Step& m, GameState& state) {
+static void handle(const Reader::Step& m, AppState& state) {
     Logger::log() << "Got a move command " << m.content;
 
-    if (state.state == GameState::GS::GameOver) {
+    if (state.state == AppState::GS::GameOver) {
         Logger::error() << "Sorry game over! restart if you want";
         return ;
     }
@@ -143,15 +153,15 @@ static void handle(const Reader::Step& m, GameState& state) {
         return;
     }
 
-    auto [newBoard, moveRes] = state.board.doMove(move, state.rng());
+    Board newBoard = state.board.doMove(move, state.rng());
 
     state.board = newBoard;
 
-    if (moveRes == MoveRes::Death) {
-        state.state = GameState::GS::GameOver;
+    if (newBoard.moveRes == MoveRes::Death) {
+        state.state = AppState::GS::GameOver;
     }
 
 
-    Logger::log() << "Result: " << moveRes;
+    Logger::log() << "Result: " << newBoard.moveRes;
     Logger::board() << state.board;
 }

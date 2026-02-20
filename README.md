@@ -17,3 +17,4 @@ The reinforment learning algo is implemented in C++, which is then compiled to w
 
 - [ ] `light-dark` is not supported on my phone :(
 - [ ] actually make it do the thing
+- [ ] rename episode_done to batch_done

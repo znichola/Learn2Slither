@@ -19,8 +19,9 @@ namespace Reader {
 struct Start { std::string content; };
 struct Step { std::string content; };
 struct Train { std::string content; };
+struct ResumeTrain { std::string content; };
 
-using Message = std::variant<Start, Step, Train>;
+using Message = std::variant<Start, Step, Train, ResumeTrain>;
 
 class Parser {
 private:
@@ -35,6 +36,7 @@ private:
         { "START_START[", "]START_END", [](std::string c) -> Message { return Start{std::move(c)}; } },
         { "STEP_START[", "]STEP_END", [](std::string c) -> Message { return Step{std::move(c)}; } },
         { "TRAIN_START[", "]TRAIN_END", [](std::string c) -> Message { return Train{std::move(c)}; } },
+        { "RESUME_TRAIN_START[", "]RESUME_TRAIN_END", [](std::string c) -> Message { return ResumeTrain{std::move(c)}; } },
     };
 
 public:

@@ -142,8 +142,12 @@ void printSnake(std::vector<unsigned> s) {
     std::cout << "}\n";
 }
 
-Board::State Board::doMove(Move m, unsigned seed) const {
+Board Board::doMove(Move m, unsigned seed) const {
     if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
+    if (moveRes == MoveRes::Death) {
+        Logger::error() << "Cannot move, snake is already dead!";
+        return *this;
+    }
 
     Board b = *this;
 
@@ -160,38 +164,37 @@ Board::State Board::doMove(Move m, unsigned seed) const {
     if (newHead < 0 || newHead >= static_cast<long>(b._grid.size()))
         throw std::runtime_error("NewHead out of range");
 
-    MoveRes moveRes = MoveRes::Advance;
     switch (b._grid[newHead]) {
-        case Cell::Wall:  moveRes = MoveRes::Death; break;
-        case Cell::Snake: moveRes = MoveRes::Death; break;
-        case Cell::Empty: moveRes = MoveRes::Advance; break;
-        case Cell::Green: moveRes = MoveRes::Green; break;
-        case Cell::Red:   moveRes = MoveRes::Red; break;
+        case Cell::Wall:  b.moveRes = MoveRes::Death; break;
+        case Cell::Snake: b.moveRes = MoveRes::Death; break;
+        case Cell::Empty: b.moveRes = MoveRes::Advance; break;
+        case Cell::Green: b.moveRes = MoveRes::Green; break;
+        case Cell::Red:   b.moveRes = MoveRes::Red; break;
         case Cell::Head:  throw std::runtime_error("Cannot move onto head");
     }
 
     b._grid[head] = Cell::Snake;
     b._grid[newHead] = Cell::Head;
     b._snake.push_back(newHead);
-    if (moveRes != MoveRes::Green) {
+    if (b.moveRes != MoveRes::Green) {
         b._snake.erase(b._snake.begin());
         b._grid[tail] = Cell::Empty;
     }
-    if (moveRes == MoveRes::Red && b.snakeLength() != 0) {
+    if (b.moveRes == MoveRes::Red && b.snakeLength() != 0) {
         b._grid[b._snake.front()] = Cell::Empty;
         b._snake.erase(b._snake.begin());
     }
-    if (b.snakeLength() == 0) moveRes = MoveRes::Death;
+    if (b.snakeLength() == 0) b.moveRes = MoveRes::Death;
 
-    if (moveRes == MoveRes::Red) {
+    if (b.moveRes == MoveRes::Red) {
         auto rb = b.randomSpawn(Cell::Red, seed);
-        return {rb.first, moveRes};
+        return rb.first;
     }
-    else if (moveRes == MoveRes::Green) {
+    else if (b.moveRes == MoveRes::Green) {
         auto rb = b.randomSpawn(Cell::Green, seed);
-        return {rb.first, moveRes};
-    }   
-    return {b, moveRes};
+        return rb.first;
+    }
+    return b;
 }
 
 unsigned Board::snakeLength() const {
