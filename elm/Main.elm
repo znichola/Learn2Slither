@@ -20,6 +20,7 @@ type alias Model =
     , receivedMessages : List WasmMessage
     , replayIndex : Maybe Int
     , config : Config
+    , training : Bool
     }
 
 
@@ -48,6 +49,7 @@ init _ =
       , receivedMessages = []
       , replayIndex = Nothing
       , config = defaultConfig
+      , training = False
       }
     , Cmd.none
     )
@@ -128,6 +130,7 @@ type Msg
     = SendStep String
     | SendManual
     | SendTrain Encode.Value
+    | SendStopTrain
     | SendAI
     | GotWasmMessage Decode.Value
     | StartReplay
@@ -140,14 +143,6 @@ applyWasmMessage wasmMsg model =
     model
         |> addToHistory wasmMsg
         |> applyContent wasmMsg
-
-
-addToHistory : WasmMessage -> Model -> Model
-addToHistory wasmMsg model =
-    { model
-        | receivedMessages =
-            model.receivedMessages ++ [ wasmMsg ]
-    }
 
 
 applyContent : WasmMessage -> Model -> Model
@@ -163,13 +158,29 @@ applyContent wasmMsg model =
             { model | logs = model.logs ++ [ Error wasmMsg.content ] }
 
         "episode_done" ->
-            { model
-                | logs = model.logs ++ [ Log wasmMsg.content ]
-                , replayIndex = Just (List.length model.receivedMessages - 1)
-            }
+            if String.startsWith "Training complete" wasmMsg.content then
+                { model
+                    | logs = model.logs ++ [ Log wasmMsg.content ]
+
+                    -- TODO this is not being called, ever. Something must be done!
+                    , replayIndex = Just (List.length model.receivedMessages - 1)
+                    , receivedMessages = []
+                    , training = False
+                }
+
+            else
+                { model
+                    | logs = model.logs ++ [ Log wasmMsg.content ]
+                    , replayIndex = Just (List.length model.receivedMessages - 1)
+                }
 
         _ ->
             { model | logs = model.logs ++ [ Error ("unknown message type " ++ wasmMsg.content) ] }
+
+
+addToHistory : WasmMessage -> Model -> Model
+addToHistory wasmMsg model =
+    { model | receivedMessages = model.receivedMessages ++ [ wasmMsg ] }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -203,7 +214,10 @@ update msg model =
                         , ( "value", object )
                         ]
             in
-            ( { model | logs = [ Log "Sent train command to WASM" ], receivedMessages = [] }, sendToJs payload )
+            ( { model | logs = [ Log "Sent train command to WASM" ], receivedMessages = [], training = True }, sendToJs payload )
+
+        SendStopTrain ->
+            ( { model | logs = model.logs ++ [ Log "Sent stop training command to WASM" ], receivedMessages = [], training = False }, Cmd.none )
 
         SendAI ->
             let
@@ -410,8 +424,8 @@ updateConfig field value config =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container", preventDefaultOn "keydown" arrowKeyPreventDecoder ]
-        [ div [ class "game-section" ]
+    div [ class "container" ]
+        [ div [ class "game-section", preventDefaultOn "keydown" arrowKeyPreventDecoder ]
             [ h3 [] [ text "Game Board" ]
             , viewBoard model.board
             , viewControles
@@ -420,7 +434,7 @@ view model =
             [ viewLogs model.logs
             ]
         , div [ class "input-section" ]
-            [ viewButton model
+            [ viewAppControl model
             , viewConfig model.config
             ]
         ]
@@ -560,12 +574,16 @@ encodeConfig config =
         ]
 
 
-viewButton : Model -> Html Msg
-viewButton model =
-    div [ class "control-buttons" ]
+viewAppControl : Model -> Html Msg
+viewAppControl model =
+    div [ class "control-buttons", preventDefaultOn "keydown" arrowKeyPreventDecoder ]
         [ button [ onClick SendManual ] [ text "Manual play" ]
-        , button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
         , button [ onClick SendAI ] [ text "AI play" ]
+        , if model.training then
+            button [ onClick SendStopTrain ] [ text "Stop Training" ]
+
+          else
+            button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
         ]
 
 

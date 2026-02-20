@@ -85,16 +85,6 @@ static void handle(const Reader::AI& m, AppState& state) {
     state.trainer.AIplay();
 }
 
-AppState initState() {
-    Trainer trainer(Trainer::Config{});
-    
-    std::mt19937 rng(42);
-    
-    auto board = trainer.pipe.genBoard(rng());
-
-    return AppState{board, 42, rng, AppState::GS::Playing, trainer};
-}
-
 static void handle(const Reader::Manual& m, AppState& state) {
     Logger::log() << m.content;
 
@@ -137,4 +127,14 @@ static void handle(const Reader::Step& m, AppState& state) {
 
     Logger::log() << "Move command " << m.content << ", result " << state.board.moveRes;
     Logger::board() << state.board;
+}
+
+AppState initState() {
+    Trainer trainer(Trainer::Config{});
+    
+    std::mt19937 rng(42);
+    
+    auto board = trainer.pipe.genBoard(rng());
+
+    return AppState{board, 42, rng, AppState::GS::Playing, trainer};
 }
