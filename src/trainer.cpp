@@ -23,10 +23,35 @@ Trainer::Trainer(const Config &config)
         Pipe::RandomSpawn{Board::Cell::Green},
         }) {}
 
+void Trainer::AIplay() {
+    Board board = pipe.genBoard(agent.rng());
+
+    unsigned step = 0;
+
+    Logger::board() << board;
+
+    for (; step < config.MAX_STEPS; step++) {
+        Vision vision(board);
+        Move action = agent.chooseAction(vision);
+        Board next_board = board.doMove(action, agent.rng());
+
+        if (next_board.moveRes == MoveRes::Death)
+            break;
+
+        board = next_board;
+
+        Logger::board() << board;
+    }
+    Logger::log() << "Game finished after "
+                << " Steps " << step
+                << " Length " << board._snake.size()
+                << " qtable " << agent.q_table.size()
+                ;
+}
+
 void Trainer::trainEpisode(bool log) {
     Board board = pipe.genBoard(agent.rng());
 
-    unsigned episode_score = 0;
     unsigned step = 0;
 
     if (log) Logger::board() << board;
@@ -43,8 +68,6 @@ void Trainer::trainEpisode(bool log) {
         agent.updateQtable(vision, action, _reward, next_vision);
         agent.decayEpsilon();
 
-        episode_score += _reward > 0 ? 1 : 0;
-
         if (next_board.moveRes == MoveRes::Death)
             break;
 
@@ -53,17 +76,10 @@ void Trainer::trainEpisode(bool log) {
         if (log) Logger::board() << board;
     }
     if (log) {
-        // Logger::log() << "Episode " << _current_ep
-        //             << " Steps " << step
-        //             << " Length " << board._snake.size()
-        //             << " Score " << episode_score
-        //             << " qtable " << agent.q_table.size()
-        //             ;
         Logger::episode_done() << "Episode " 
                     << _current_ep << "/" << config.EPISODES
                     << " Steps " << step
                     << " Length " << board._snake.size()
-                    << " Score " << episode_score
                     << " qtable " << agent.q_table.size()
                     ;
     }
@@ -85,7 +101,6 @@ void Trainer::train() {
         trainEpisode(shouldLog);
         _current_ep += 1;
     }
-
 }
 
 float Trainer::reward(MoveRes moveRes) {

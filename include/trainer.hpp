@@ -38,6 +38,7 @@ public:
     Trainer() = delete;
     Trainer(const Config &config);
 
+    void AIplay();
     void train();
     void trainEpisode(bool log);
     
