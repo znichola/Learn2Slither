@@ -6,8 +6,7 @@
 #include "logger.hpp"
 
 Trainer::Trainer(const Config &config)
-    :
-    config(config), 
+    : config(config), 
     agent(Agent{
         .alpha = config.alpha,
         .gamma = config.gamma,
@@ -24,56 +23,69 @@ Trainer::Trainer(const Config &config)
         Pipe::RandomSpawn{Board::Cell::Green},
         }) {}
 
+void Trainer::trainEpisode(bool log) {
+    Board board = pipe.genBoard(agent.rng());
+
+    unsigned episode_score = 0;
+    unsigned step = 0;
+
+    if (log) Logger::board() << board;
+
+    for (; step < config.MAX_STEPS; step++) {
+        Vision vision(board);
+        Move action = agent.chooseAction(vision);
+        Board next_board = board.doMove(action, agent.rng());
+
+        float _reward = reward(next_board.moveRes);
+
+        Vision next_vision(next_board);
+        
+        agent.updateQtable(vision, action, _reward, next_vision);
+        agent.decayEpsilon();
+
+        episode_score += _reward > 0 ? 1 : 0;
+
+        if (next_board.moveRes == MoveRes::Death)
+            break;
+
+        board = next_board;
+
+        if (log) Logger::board() << board;
+    }
+    if (log) {
+        // Logger::log() << "Episode " << _current_ep
+        //             << " Steps " << step
+        //             << " Length " << board._snake.size()
+        //             << " Score " << episode_score
+        //             << " qtable " << agent.q_table.size()
+        //             ;
+        Logger::episode_done() << "Episode " 
+                    << _current_ep << "/" << config.EPISODES
+                    << " Steps " << step
+                    << " Length " << board._snake.size()
+                    << " Score " << episode_score
+                    << " qtable " << agent.q_table.size()
+                    ;
+    }
+}
 
 void Trainer::train() {
-    Logger::log() << "Starting training for " << config.EPISODES
-                  << " episodes, max steps per episode: " << config.MAX_STEPS;
-
-    const unsigned logInterval = config.EPISODES / 10;
-
-    for (unsigned episode = 1; episode <= config.EPISODES; episode++) {
-        Board board = pipe.genBoard(episode);
-
-        unsigned episode_score = 0;
-        bool done = false;
-
-        if (episode % logInterval == 0) {
-            Logger::log() << "Episode " << episode << " qtable_length "
-                          << agent.q_table.size() << " initial board:\n";
-            Logger::board() << board;
-        }
-
-        for (unsigned step = 0; step < config.MAX_STEPS; step++) {
-            Vision vision(board);
-            Move action = agent.chooseAction(vision);
-            auto nextSeed = agent.rng();
-            auto [next_board, moveRes] = board.doMove(action, nextSeed);
-
-            if (moveRes == MoveRes::Death)
-                done = true;
-            float _reward = reward(moveRes);
-
-            Vision next_vision(next_board);
-            board = next_board;
-
-            agent.updateQtable(vision, action, _reward, next_vision);
-            agent.decayEpsilon();
-
-            episode_score += _reward > 0 ? 1 : 0;
-
-            if (episode % logInterval == 0) {
-                Logger::board() << board;
-            }
-
-            if (done)
-            {
-                if (episode % logInterval == 0)
-                    Logger::log() << "Episode " << episode
-                                  << " score: " << episode_score;
-                break;
-            }
-        }
+    if (_current_ep >= config.EPISODES) {
+        Logger::log() << "Training complete: " << _current_ep
+            << "/" << config.EPISODES << " episodes trained.";
+        return;
     }
+
+    unsigned remaining = config.EPISODES - _current_ep;
+    unsigned toRun = std::min(config.BATCH_SIZE, remaining);
+
+    for (unsigned i = 0; i < toRun; ++i) {
+
+        bool shouldLog = (i == toRun - 1);
+        trainEpisode(shouldLog);
+        _current_ep += 1;
+    }
+
 }
 
 float Trainer::reward(MoveRes moveRes) {

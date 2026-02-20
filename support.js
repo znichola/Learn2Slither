@@ -8,9 +8,13 @@
  */
 
 class WasmOutputParser {
-    constructor(messageTypes = ['BOARD', 'LOG', 'ERROR']) {
+    constructor(messageTypes = []) {
         this.stdoutBuffer = '';
         this.stderrBuffer = '';
+
+        if (messageTypes.length === 0) {
+            throw new Error('At least one message type must be provided');
+        }
 
         // Derive patterns from message types
         this.patterns = this.derivePatterns(messageTypes);

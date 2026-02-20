@@ -31,7 +31,7 @@
             node: document.getElementById('elm-node')
         });
 
-        // Elm → JS: Handle commands from Elm
+        // Elm -> JS: Handle commands from Elm
         app.ports.sendToJs.subscribe((payload) => {
             let value;
             if (payload.type == "STEP") {
@@ -46,9 +46,7 @@
             window.sendToWasm(text);
 
             if (payload.type === "step") {
-                // Later: call your WASM function
-                // Module.ccall("step", null, ["number"], [value]);
-                termPrint(`[Elm→WASM] step(${value})`, 'msg-log');
+                termPrint(`[Elm -> WASM] step(${value})`, 'msg-log');
             }
         });
 
@@ -87,7 +85,7 @@
         }
 
         // Create parser instance
-        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR']);
+        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "EPISODE_DONE"]);
 
         // Handle parsed messages - send to both terminal and Elm
         parser.onMessage = (message) => {
