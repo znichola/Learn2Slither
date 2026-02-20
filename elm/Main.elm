@@ -4,7 +4,7 @@ import Browser
 import Browser.Events
 import Html exposing (Html, button, div, h3, input, label, span, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, placeholder, step, style, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time
@@ -126,8 +126,9 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 
 type Msg
     = SendStep String
-    | SendStart
+    | SendManual
     | SendTrain Encode.Value
+    | SendAI
     | GotWasmMessage Decode.Value
     | StartReplay
     | ReplayTick Time.Posix
@@ -184,15 +185,15 @@ update msg model =
             in
             ( model, sendToJs payload )
 
-        SendStart ->
+        SendManual ->
             let
                 payload =
                     Encode.object
-                        [ ( "type", Encode.string "START" )
-                        , ( "value", Encode.string "start playing" )
+                        [ ( "type", Encode.string "MANUAL" )
+                        , ( "value", Encode.string "Start playing, use buttons, arrow keys, wasd or vim motions!" )
                         ]
             in
-            ( { model | logs = [ Log "Sent start command to WASM" ], receivedMessages = [] }, sendToJs payload )
+            ( { model | logs = [ Log "Sent manual command to WASM" ], receivedMessages = [] }, sendToJs payload )
 
         SendTrain object ->
             let
@@ -203,6 +204,16 @@ update msg model =
                         ]
             in
             ( { model | logs = [ Log "Sent train command to WASM" ], receivedMessages = [] }, sendToJs payload )
+
+        SendAI ->
+            let
+                payload =
+                    Encode.object
+                        [ ( "type", Encode.string "AI" )
+                        , ( "value", Encode.string "start AI play" )
+                        ]
+            in
+            ( { model | logs = [ Log "Sent AI play command to WASM" ], receivedMessages = [] }, sendToJs payload )
 
         GotWasmMessage value ->
             case decodeWasmMessage value of
@@ -399,7 +410,7 @@ updateConfig field value config =
 
 view : Model -> Html Msg
 view model =
-    div [ class "container" ]
+    div [ class "container", preventDefaultOn "keydown" arrowKeyPreventDecoder ]
         [ div [ class "game-section" ]
             [ h3 [] [ text "Game Board" ]
             , viewBoard model.board
@@ -552,9 +563,9 @@ encodeConfig config =
 viewButton : Model -> Html Msg
 viewButton model =
     div [ class "control-buttons" ]
-        [ button [ onClick StartReplay ] [ text "Replay" ]
-        , button [ onClick SendStart ] [ text "Start" ]
+        [ button [ onClick SendManual ] [ text "Manual play" ]
         , button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
+        , button [ onClick SendAI ] [ text "AI play" ]
         ]
 
 
@@ -609,32 +620,39 @@ parseFloat str fallback =
 
 
 keyToStepMsg : String -> Maybe Msg
-keyToStepMsg key =
-    case key of
-        "ArrowUp" ->
-            Just (SendStep "UP")
+keyToStepMsg rawKey =
+    let
+        key =
+            String.toLower rawKey
 
-        "ArrowDown" ->
-            Just (SendStep "DOWN")
+        mappings =
+            [ ( [ "arrowup", "k", "w" ], "UP" )
+            , ( [ "arrowdown", "j", "s" ], "DOWN" )
+            , ( [ "arrowleft", "h", "a" ], "LEFT" )
+            , ( [ "arrowright", "l", "d" ], "RIGHT" )
+            ]
 
-        "ArrowLeft" ->
-            Just (SendStep "LEFT")
+        match =
+            List.filter (\( keys, _ ) -> List.member key keys) mappings
+                |> List.head
+    in
+    case match of
+        Just ( _, direction ) ->
+            Just (SendStep direction)
 
-        "ArrowRight" ->
-            Just (SendStep "RIGHT")
-
-        _ ->
+        Nothing ->
             Nothing
 
 
-arrowKeyDecoder : Decode.Decoder Msg
-arrowKeyDecoder =
+arrowKeyPreventDecoder : Decode.Decoder ( Msg, Bool )
+arrowKeyPreventDecoder =
     Decode.field "key" Decode.string
         |> Decode.andThen
             (\key ->
                 case keyToStepMsg key of
                     Just msg ->
-                        Decode.succeed msg
+                        -- True = preventDefault()
+                        Decode.succeed ( msg, True )
 
                     Nothing ->
                         Decode.fail "Not an arrow key"
@@ -655,7 +673,6 @@ subscriptions model =
 
             Nothing ->
                 Sub.none
-        , Browser.Events.onKeyDown (Decode.map identity arrowKeyDecoder)
         ]
 
 

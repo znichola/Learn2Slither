@@ -21,10 +21,11 @@ struct AppState {
     Trainer trainer;
 };
 
-static void handle(const Reader::Start& m, AppState& state);
+static void handle(const Reader::Manual& m, AppState& state);
 static void handle(const Reader::Step& m, AppState& state);
 static void handle(const Reader::Train& m, AppState& state);
 static void handle(const Reader::ResumeTrain& m, AppState& state);
+static void handle(const Reader::AI& m, AppState& state);
 
 static void dispatch(const Reader::Message& msg, AppState& state) {
     std::visit([&](auto&& m) { handle(m, state); }, msg);
@@ -49,10 +50,6 @@ int main() {
 }
 
 static void handle(const Reader::Train& m, AppState& state) {
-    (void)state;
-
-    Logger::log() << "Got a train command " << m.content;
-
     Trainer::Config config = parseConfig(m.content);
 
     Logger::log() << "Parsed config: " 
@@ -82,58 +79,37 @@ static void handle(const Reader::ResumeTrain& m, AppState& state) {
     state.trainer.train();
 }
 
-AppState initState() {
-        auto board = Board(R"(
-WWWWWWWWWWWW
-W          W
-W          W
-W          W
-W       SSHW
-W          W
-W   G R    W
-W          W
-W          W
-W          W
-W        G W
-WWWWWWWWWWWW
-)");
-    int seed = 42;
-    std::mt19937 rng(seed);
-    return AppState{board, seed, rng, AppState::GS::Playing, Trainer(Trainer::Config{})};
-}
-
-static void handle(const Reader::Start& m, AppState& state) {
+static void handle(const Reader::AI& m, AppState& state) {
     (void)m;
-
-    std::initializer_list<Move> moves = { Move::Down, Move::Down, Move::Left, Move::Left, Move::Left, Move::Down, Move::Left, Move::Left, Move::Up, Move::Left, Move::Left};
-    
-    Logger::log() << "Game initialized with seed: " << state.seed;
-    Logger::board() << state.board;
-
-    state.state = AppState::GS::Playing;
-
-    return ;
-
-    int i = 1;
-    for (auto it = moves.begin(); it != moves.end(); ++it) {
-        auto move = *it;
-        Board newBoard = state.board.doMove(move, state.rng());
-        state.board = newBoard;
-
-        Logger::log() << "Move " << i << ": " << move << " - Result: " << newBoard.moveRes;
-        Logger::board() << state.board;
-
-        if (newBoard.moveRes == MoveRes::Death) {
-            Logger::error() << "Game Over: Snake died!";
-            break;
-        }
-        i++;
-    }
+    Logger::log() << "Starting AI play mode, with latest trained model";
+    state.trainer.AIplay();
 }
+
+AppState initState() {
+    Trainer trainer(Trainer::Config{});
+    
+    std::mt19937 rng(42);
+    
+    auto board = trainer.pipe.genBoard(rng());
+
+    return AppState{board, 42, rng, AppState::GS::Playing, trainer};
+}
+
+static void handle(const Reader::Manual& m, AppState& state) {
+    Logger::log() << m.content;
+
+    if (state.state == AppState::GS::GameOver) {
+        Logger::log() << "Restarting the game with a new random board";
+        state.board = state.trainer.pipe.genBoard(state.rng());
+    }
+
+    Logger::board() << state.board;
+    state.state = AppState::GS::Playing;
+    return ;
+}
+
 
 static void handle(const Reader::Step& m, AppState& state) {
-    Logger::log() << "Got a move command " << m.content;
-
     if (state.state == AppState::GS::GameOver) {
         Logger::error() << "Sorry game over! restart if you want";
         return ;
@@ -153,15 +129,12 @@ static void handle(const Reader::Step& m, AppState& state) {
         return;
     }
 
-    Board newBoard = state.board.doMove(move, state.rng());
+    state.board = state.board.doMove(move, state.rng());
 
-    state.board = newBoard;
-
-    if (newBoard.moveRes == MoveRes::Death) {
+    if (state.board.moveRes == MoveRes::Death) {
         state.state = AppState::GS::GameOver;
     }
 
-
-    Logger::log() << "Result: " << newBoard.moveRes;
+    Logger::log() << "Move command " << m.content << ", result " << state.board.moveRes;
     Logger::board() << state.board;
 }
