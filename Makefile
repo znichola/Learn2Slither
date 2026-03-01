@@ -113,8 +113,8 @@ deps/elm:
 	&& gzip -d elm.gz \
 	&& chmod +x elm
 
-elm.js: elm/Main.elm deps/elm
-	cd elm && ../deps/elm make Main.elm --output=../elm.js
+elm.js: elm/src/Main.elm deps/elm
+	cd elm && ../deps/elm make src/Main.elm --output=../elm.js
 
 elm-clean:
 	-rm elm.js

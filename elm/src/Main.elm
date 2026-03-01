@@ -1,9 +1,8 @@
 port module Main exposing (main)
 
 import Browser
-import Browser.Events
 import Html exposing (Html, button, div, h3, input, label, span, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, placeholder, step, style, type_, value)
+import Html.Attributes exposing (class, step, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -201,7 +200,12 @@ update msg model =
                 payload =
                     Encode.object
                         [ ( "type", Encode.string "MANUAL" )
-                        , ( "value", Encode.string "Start playing, use buttons, arrow keys, wasd or vim motions!" )
+                        , ( "value"
+                          , Encode.object
+                                [ ( "board_x", Encode.int model.config.boardX )
+                                , ( "board_y", Encode.int model.config.boardY )
+                                ]
+                          )
                         ]
             in
             ( { model | logs = [ Log "Sent manual command to WASM" ], receivedMessages = [] }, sendToJs payload )
@@ -499,8 +503,7 @@ viewControles =
 viewField : String -> Html Msg -> Html Msg
 viewField labelText inputElement =
     span [ class "config-field" ]
-        [ label []
-            [ text labelText ]
+        [ label [] [ text labelText ]
         , inputElement
         ]
 
@@ -509,10 +512,7 @@ viewIntField : String -> ConfigField -> Int -> Html Msg
 viewIntField labelText field current =
     viewField labelText <|
         input
-            [ type_ "number"
-            , value (String.fromInt current)
-            , onInput (UpdateConfig field)
-            ]
+            [ type_ "number", value (String.fromInt current), onInput (UpdateConfig field) ]
             []
 
 
@@ -520,11 +520,7 @@ viewFloatField : String -> ConfigField -> Float -> Html Msg
 viewFloatField labelText field current =
     viewField labelText <|
         input
-            [ type_ "number"
-            , step "0.01"
-            , value (String.fromFloat current)
-            , onInput (UpdateConfig field)
-            ]
+            [ type_ "number", step "0.01", value (String.fromFloat current), onInput (UpdateConfig field) ]
             []
 
 
@@ -619,22 +615,30 @@ viewLog entry =
 
 parseInt : String -> Int -> Int
 parseInt str fallback =
-    case String.toInt str of
-        Just n ->
-            n
+    if String.isEmpty str then
+        0
 
-        Nothing ->
-            fallback
+    else
+        case String.toInt str of
+            Just n ->
+                n
+
+            Nothing ->
+                fallback
 
 
 parseFloat : String -> Float -> Float
 parseFloat str fallback =
-    case String.toFloat str of
-        Just n ->
-            n
+    if String.isEmpty str then
+        0
 
-        Nothing ->
-            fallback
+    else
+        case String.toFloat str of
+            Just n ->
+                n
+
+            Nothing ->
+                fallback
 
 
 keyToStepMsg : String -> Maybe Msg
