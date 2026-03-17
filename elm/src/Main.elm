@@ -54,42 +54,76 @@ init _ =
     )
 
 
+type alias Field a =
+    { raw : String
+    , parsed : Maybe a
+    }
+
+
+fieldInt : Int -> Field Int
+fieldInt n =
+    { raw = String.fromInt n
+    , parsed = Just n
+    }
+
+
+updateFieldInt : String -> Field Int -> Field Int
+updateFieldInt str field =
+    { raw = str
+    , parsed = String.toInt str
+    }
+
+
+fieldFloat : Float -> Field Float
+fieldFloat n =
+    { raw = String.fromFloat n
+    , parsed = Just n
+    }
+
+
+updateFieldFloat : String -> Field Float -> Field Float
+updateFieldFloat str field =
+    { raw = str
+    , parsed = String.toFloat str
+    }
+
+
 type alias Config =
-    { episodes : Int
-    , batchSize : Int
-    , maxSteps : Int
-    , frame_time_ms : Int
-    , boardX : Int
-    , boardY : Int
-    , alpha : Float
-    , gamma : Float
-    , epsilon : Float
-    , epsilonDecay : Float
-    , epsilonMin : Float
-    , rewardAdvance : Float
-    , rewardGreen : Float
-    , rewardRed : Float
-    , rewardDeath : Float
+    { episodes : Field Int
+    , batchSize : Field Int
+    , maxSteps : Field Int
+    , frame_time_ms : Field Int
+    , boardX : Field Int
+    , boardY : Field Int
+    , alpha : Field Float
+    , gamma : Field Float
+    , epsilon : Field Float
+    , epsilonDecay : Field Float
+    , epsilonMin : Field Float
+    , rewardAdvance : Field Float
+    , rewardGreen : Field Float
+    , rewardRed : Field Float
+    , rewardDeath : Field Float
     }
 
 
 defaultConfig : Config
 defaultConfig =
-    { episodes = 10
-    , batchSize = 1
-    , maxSteps = 100
-    , frame_time_ms = 100
-    , boardX = 10
-    , boardY = 10
-    , alpha = 0.4
-    , gamma = 0.9
-    , epsilon = 0.1
-    , epsilonDecay = 0.995
-    , epsilonMin = 0.01
-    , rewardAdvance = 0.0
-    , rewardGreen = 10000.0
-    , rewardRed = 1.0
-    , rewardDeath = -10.0
+    { episodes = fieldInt 10
+    , batchSize = fieldInt 1
+    , maxSteps = fieldInt 100
+    , frame_time_ms = fieldInt 100
+    , boardX = fieldInt 10
+    , boardY = fieldInt 10
+    , alpha = fieldFloat 0.4
+    , gamma = fieldFloat 0.9
+    , epsilon = fieldFloat 0.1
+    , epsilonDecay = fieldFloat 0.995
+    , epsilonMin = fieldFloat 0.01
+    , rewardAdvance = fieldFloat 0.0
+    , rewardGreen = fieldFloat 10000.0
+    , rewardRed = fieldFloat 1.0
+    , rewardDeath = fieldFloat -10.0
     }
 
 
@@ -377,49 +411,49 @@ updateConfig : ConfigField -> String -> Config -> Config
 updateConfig field value config =
     case field of
         Episodes ->
-            { config | episodes = parseInt value config.episodes }
+            { config | episodes = updateFieldInt value config.episodes }
 
         BatchSize ->
-            { config | batchSize = parseInt value config.batchSize }
+            { config | batchSize = updateFieldInt value config.batchSize }
 
         MaxSteps ->
-            { config | maxSteps = parseInt value config.maxSteps }
+            { config | maxSteps = updateFieldInt value config.maxSteps }
 
         FrameTime ->
-            { config | frame_time_ms = parseInt value config.frame_time_ms }
+            { config | frame_time_ms = updateFieldInt value config.frame_time_ms }
 
         BoardX ->
-            { config | boardX = parseInt value config.boardX }
+            { config | boardX = updateFieldInt value config.boardX }
 
         BoardY ->
-            { config | boardY = parseInt value config.boardY }
+            { config | boardY = updateFieldInt value config.boardY }
 
         Alpha ->
-            { config | alpha = parseFloat value config.alpha }
+            { config | alpha = updateFieldFloat value config.alpha }
 
         Gamma ->
-            { config | gamma = parseFloat value config.gamma }
+            { config | gamma = updateFieldFloat value config.gamma }
 
         Epsilon ->
-            { config | epsilon = parseFloat value config.epsilon }
+            { config | epsilon = updateFieldFloat value config.epsilon }
 
         EpsilonDecay ->
-            { config | epsilonDecay = parseFloat value config.epsilonDecay }
+            { config | epsilonDecay = updateFieldFloat value config.epsilonDecay }
 
         EpsilonMin ->
-            { config | epsilonMin = parseFloat value config.epsilonMin }
+            { config | epsilonMin = updateFieldFloat value config.epsilonMin }
 
         RewardAdvance ->
-            { config | rewardAdvance = parseFloat value config.rewardAdvance }
+            { config | rewardAdvance = updateFieldFloat value config.rewardAdvance }
 
         RewardGreen ->
-            { config | rewardGreen = parseFloat value config.rewardGreen }
+            { config | rewardGreen = updateFieldFloat value config.rewardGreen }
 
         RewardRed ->
-            { config | rewardRed = parseFloat value config.rewardRed }
+            { config | rewardRed = updateFieldFloat value config.rewardRed }
 
         RewardDeath ->
-            { config | rewardDeath = parseFloat value config.rewardDeath }
+            { config | rewardDeath = updateFieldFloat value config.rewardDeath }
 
 
 

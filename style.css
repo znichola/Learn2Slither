@@ -196,6 +196,7 @@ button {
     font-size: 0.875rem;
     cursor: pointer;
     font-weight: bold;
+    touch-action: manipulation; /* disable tap to zoom */
 }
 
 button:hover {
