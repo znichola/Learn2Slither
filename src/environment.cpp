@@ -143,11 +143,11 @@ void printSnake(std::vector<unsigned> s) {
 }
 
 Board Board::doMove(Move m, unsigned seed) const {
-    if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
     if (moveRes == MoveRes::Death) {
         Logger::error() << "Cannot move, snake is already dead!";
         return *this;
     }
+    if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
 
     Board b = *this;
 
@@ -186,7 +186,11 @@ Board Board::doMove(Move m, unsigned seed) const {
     }
     if (b.snakeLength() == 0) b.moveRes = MoveRes::Death;
 
-    if (b.moveRes == MoveRes::Red) {
+    if (b.moveRes == MoveRes::Death) {
+        auto rb = *this;
+        rb.moveRes = MoveRes::Death;
+        return rb;
+    } else if (b.moveRes == MoveRes::Red) {
         auto rb = b.randomSpawn(Cell::Red, seed);
         return rb.first;
     }
