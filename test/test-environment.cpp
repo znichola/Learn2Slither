@@ -29,9 +29,8 @@ void extracted(int seed, Board board, Move move) {
 
         try {
             out << move << " move " << i << "\n";
-            auto [b, r] = board.doMove(move, rng());
-            board = b;
-            out << "Move result " << r << "\n"
+            board = board.doMove(move, rng());
+            out << "Move result " << board.moveRes << "\n"
                 << "BOARD:\n"
                 << board << "\n";
         } catch (const std::exception &e) {
@@ -84,10 +83,9 @@ void move() {
     for (; it1 != moves.end() && it2 != expected_res.end(); ++it1, ++it2) {
         auto m = *it1;
         auto e = *it2;
-        auto [b, r] = board.doMove(m, rng());
-        board = b;
+        board = board.doMove(m, rng());
         // std::cout << "RES: " << r <<  "\n" << board << "\n";
-        ASSERT_EQ(r, e, "Move res does not match expected");
+        ASSERT_EQ(board.moveRes, e, "Move res does not match expected");
     }
     ASSERT_EQ(board.snakeLength(), 3U, "Shorter after each red apple");
     std::stringstream out;
