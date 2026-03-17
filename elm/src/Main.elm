@@ -1,5 +1,7 @@
 port module Main exposing (main)
 
+import App.Board exposing (..)
+import App.Config exposing (..)
 import Browser
 import Html exposing (Html, button, div, h3, input, label, span, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, step, type_, value)
@@ -28,19 +30,6 @@ type LogType
     | Log String
 
 
-type alias Board =
-    { rows : List (List Cell) }
-
-
-type Cell
-    = Wall
-    | Empty
-    | Snake
-    | Head
-    | Green
-    | Red
-
-
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { board = Nothing
@@ -52,57 +41,6 @@ init _ =
       }
     , Cmd.none
     )
-
-
-type alias Field a =
-    { raw : String
-    , parsed : Maybe a
-    , default : a
-    }
-
-
-fieldInt : Int -> Field Int
-fieldInt n =
-    { raw = String.fromInt n, parsed = Just n, default = n }
-
-
-fieldFloat : Float -> Field Float
-fieldFloat n =
-    { raw = String.fromFloat n, parsed = Just n, default = n }
-
-
-updateFieldInt : String -> Field Int -> Field Int
-updateFieldInt str f =
-    { raw = str, parsed = String.toInt str, default = f.default }
-
-
-updateFieldFloat : String -> Field Float -> Field Float
-updateFieldFloat str f =
-    { raw = str, parsed = String.toFloat str, default = f.default }
-
-
-getField : Field a -> a
-getField field =
-    Maybe.withDefault field.default field.parsed
-
-
-type alias Config =
-    { episodes : Field Int
-    , batchSize : Field Int
-    , maxSteps : Field Int
-    , frameTimeMs : Field Int
-    , boardX : Field Int
-    , boardY : Field Int
-    , alpha : Field Float
-    , gamma : Field Float
-    , epsilon : Field Float
-    , epsilonDecay : Field Float
-    , epsilonMin : Field Float
-    , rewardAdvance : Field Float
-    , rewardGreen : Field Float
-    , rewardRed : Field Float
-    , rewardDeath : Field Float
-    }
 
 
 defaultConfig : Config
@@ -123,94 +61,6 @@ defaultConfig =
     , rewardRed = fieldFloat 1.0
     , rewardDeath = fieldFloat -10.0
     }
-
-
-type ConfigField
-    = Episodes
-    | BatchSize
-    | MaxSteps
-    | FrameTime
-    | BoardX
-    | BoardY
-    | Alpha
-    | Gamma
-    | Epsilon
-    | EpsilonDecay
-    | EpsilonMin
-    | RewardAdvance
-    | RewardGreen
-    | RewardRed
-    | RewardDeath
-
-
-updateConfig : ConfigField -> String -> Config -> Config
-updateConfig field str config =
-    case field of
-        Episodes ->
-            { config | episodes = updateFieldInt str config.episodes }
-
-        BatchSize ->
-            { config | batchSize = updateFieldInt str config.batchSize }
-
-        MaxSteps ->
-            { config | maxSteps = updateFieldInt str config.maxSteps }
-
-        FrameTime ->
-            { config | frameTimeMs = updateFieldInt str config.frameTimeMs }
-
-        BoardX ->
-            { config | boardX = updateFieldInt str config.boardX }
-
-        BoardY ->
-            { config | boardY = updateFieldInt str config.boardY }
-
-        Alpha ->
-            { config | alpha = updateFieldFloat str config.alpha }
-
-        Gamma ->
-            { config | gamma = updateFieldFloat str config.gamma }
-
-        Epsilon ->
-            { config | epsilon = updateFieldFloat str config.epsilon }
-
-        EpsilonDecay ->
-            { config | epsilonDecay = updateFieldFloat str config.epsilonDecay }
-
-        EpsilonMin ->
-            { config | epsilonMin = updateFieldFloat str config.epsilonMin }
-
-        RewardAdvance ->
-            { config | rewardAdvance = updateFieldFloat str config.rewardAdvance }
-
-        RewardGreen ->
-            { config | rewardGreen = updateFieldFloat str config.rewardGreen }
-
-        RewardRed ->
-            { config | rewardRed = updateFieldFloat str config.rewardRed }
-
-        RewardDeath ->
-            { config | rewardDeath = updateFieldFloat str config.rewardDeath }
-
-
-encodeConfig : Config -> Encode.Value
-encodeConfig config =
-    Encode.object
-        [ ( "EPISODES", Encode.int (getField config.episodes) )
-        , ( "BATCH_SIZE", Encode.int (getField config.batchSize) )
-        , ( "MAX_STEPS", Encode.int (getField config.maxSteps) )
-        , ( "frame_time_ms", Encode.int (getField config.frameTimeMs) )
-        , ( "board_x", Encode.int (getField config.boardX) )
-        , ( "board_y", Encode.int (getField config.boardY) )
-        , ( "alpha", Encode.float (getField config.alpha) )
-        , ( "gamma", Encode.float (getField config.gamma) )
-        , ( "epsilon", Encode.float (getField config.epsilon) )
-        , ( "epsilon_decay", Encode.float (getField config.epsilonDecay) )
-        , ( "epsilon_min", Encode.float (getField config.epsilonMin) )
-        , ( "reward_advance", Encode.float (getField config.rewardAdvance) )
-        , ( "reward_green", Encode.float (getField config.rewardGreen) )
-        , ( "reward_red", Encode.float (getField config.rewardRed) )
-        , ( "reward_death", Encode.float (getField config.rewardDeath) )
-        ]
 
 
 
@@ -429,49 +279,6 @@ update msg model =
                             ( { updatedModel | replayIndex = nextIndex }, cmd )
 
 
-parseBoard : String -> Maybe Board
-parseBoard content =
-    let
-        rows =
-            content
-                |> String.lines
-                |> List.filter (not << String.isEmpty)
-                |> List.map parseLine
-    in
-    if List.isEmpty rows then
-        Nothing
-
-    else
-        Just { rows = rows }
-
-
-parseLine : String -> List Cell
-parseLine =
-    String.toList >> List.map charToCell
-
-
-charToCell : Char -> Cell
-charToCell char =
-    case char of
-        'W' ->
-            Wall
-
-        'S' ->
-            Snake
-
-        'H' ->
-            Head
-
-        'G' ->
-            Green
-
-        'R' ->
-            Red
-
-        _ ->
-            Empty
-
-
 
 -- VIEW
 
@@ -488,51 +295,9 @@ view model =
             [ viewLogs model.logs ]
         , div [ class "input-section" ]
             [ viewAppControl model
-            , viewConfig model.config
+            , viewConfig model.config UpdateConfig
             ]
         ]
-
-
-viewBoard : Maybe Board -> Html Msg
-viewBoard maybeBoard =
-    case maybeBoard of
-        Nothing ->
-            div [ class "board-placeholder" ] [ text "Waiting for board data..." ]
-
-        Just board ->
-            table [ class "game-board" ]
-                [ tbody [] (List.map viewRow board.rows) ]
-
-
-viewRow : List Cell -> Html Msg
-viewRow cells =
-    tr [] (List.map viewCell cells)
-
-
-viewCell : Cell -> Html Msg
-viewCell cell =
-    let
-        ( cellClass, cellChar ) =
-            case cell of
-                Wall ->
-                    ( "cell-wall", "W" )
-
-                Empty ->
-                    ( "cell-empty", " " )
-
-                Snake ->
-                    ( "cell-snake", "S" )
-
-                Head ->
-                    ( "cell-head", "H" )
-
-                Green ->
-                    ( "cell-green", "G" )
-
-                Red ->
-                    ( "cell-red", "R" )
-    in
-    td [ class ("cell " ++ cellClass) ] [ text cellChar ]
 
 
 viewControls : Html Msg
@@ -555,46 +320,6 @@ viewAppControl model =
 
           else
             button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
-        ]
-
-
-viewIntField : String -> ConfigField -> Field Int -> Html Msg
-viewIntField labelText field f =
-    span [ class "config-field" ]
-        [ label [] [ text labelText ]
-        , input [ type_ "number", value f.raw, onInput (UpdateConfig field) ] []
-        ]
-
-
-viewFloatField : String -> ConfigField -> Field Float -> Html Msg
-viewFloatField labelText field f =
-    span [ class "config-field" ]
-        [ label [] [ text labelText ]
-        , input [ type_ "number", step "0.1", value f.raw, onInput (UpdateConfig field) ] []
-        ]
-
-
-viewConfig : Config -> Html Msg
-viewConfig config =
-    div [ class "config" ]
-        [ h3 [] [ text "Training Configuration" ]
-        , div [ class "config-grid" ]
-            [ viewIntField "Episodes" Episodes config.episodes
-            , viewIntField "Batch Size" BatchSize config.batchSize
-            , viewIntField "Max Steps" MaxSteps config.maxSteps
-            , viewIntField "Frame Time (ms)" FrameTime config.frameTimeMs
-            , viewIntField "Board X" BoardX config.boardX
-            , viewIntField "Board Y" BoardY config.boardY
-            , viewFloatField "Alpha" Alpha config.alpha
-            , viewFloatField "Gamma" Gamma config.gamma
-            , viewFloatField "Epsilon" Epsilon config.epsilon
-            , viewFloatField "Epsilon Decay" EpsilonDecay config.epsilonDecay
-            , viewFloatField "Epsilon Min" EpsilonMin config.epsilonMin
-            , viewFloatField "Reward Advance" RewardAdvance config.rewardAdvance
-            , viewFloatField "Reward Green" RewardGreen config.rewardGreen
-            , viewFloatField "Reward Red" RewardRed config.rewardRed
-            , viewFloatField "Reward Death" RewardDeath config.rewardDeath
-            ]
         ]
 
 
