@@ -57,42 +57,40 @@ init _ =
 type alias Field a =
     { raw : String
     , parsed : Maybe a
+    , default : a
     }
 
 
 fieldInt : Int -> Field Int
 fieldInt n =
-    { raw = String.fromInt n
-    , parsed = Just n
-    }
-
-
-updateFieldInt : String -> Field Int -> Field Int
-updateFieldInt str field =
-    { raw = str
-    , parsed = String.toInt str
-    }
+    { raw = String.fromInt n, parsed = Just n, default = n }
 
 
 fieldFloat : Float -> Field Float
 fieldFloat n =
-    { raw = String.fromFloat n
-    , parsed = Just n
-    }
+    { raw = String.fromFloat n, parsed = Just n, default = n }
+
+
+updateFieldInt : String -> Field Int -> Field Int
+updateFieldInt str f =
+    { raw = str, parsed = String.toInt str, default = f.default }
 
 
 updateFieldFloat : String -> Field Float -> Field Float
-updateFieldFloat str field =
-    { raw = str
-    , parsed = String.toFloat str
-    }
+updateFieldFloat str f =
+    { raw = str, parsed = String.toFloat str, default = f.default }
+
+
+getField : Field a -> a
+getField field =
+    Maybe.withDefault field.default field.parsed
 
 
 type alias Config =
     { episodes : Field Int
     , batchSize : Field Int
     , maxSteps : Field Int
-    , frame_time_ms : Field Int
+    , frameTimeMs : Field Int
     , boardX : Field Int
     , boardY : Field Int
     , alpha : Field Float
@@ -112,7 +110,7 @@ defaultConfig =
     { episodes = fieldInt 10
     , batchSize = fieldInt 1
     , maxSteps = fieldInt 100
-    , frame_time_ms = fieldInt 100
+    , frameTimeMs = fieldInt 100
     , boardX = fieldInt 10
     , boardY = fieldInt 10
     , alpha = fieldFloat 0.4
@@ -145,6 +143,76 @@ type ConfigField
     | RewardDeath
 
 
+updateConfig : ConfigField -> String -> Config -> Config
+updateConfig field str config =
+    case field of
+        Episodes ->
+            { config | episodes = updateFieldInt str config.episodes }
+
+        BatchSize ->
+            { config | batchSize = updateFieldInt str config.batchSize }
+
+        MaxSteps ->
+            { config | maxSteps = updateFieldInt str config.maxSteps }
+
+        FrameTime ->
+            { config | frameTimeMs = updateFieldInt str config.frameTimeMs }
+
+        BoardX ->
+            { config | boardX = updateFieldInt str config.boardX }
+
+        BoardY ->
+            { config | boardY = updateFieldInt str config.boardY }
+
+        Alpha ->
+            { config | alpha = updateFieldFloat str config.alpha }
+
+        Gamma ->
+            { config | gamma = updateFieldFloat str config.gamma }
+
+        Epsilon ->
+            { config | epsilon = updateFieldFloat str config.epsilon }
+
+        EpsilonDecay ->
+            { config | epsilonDecay = updateFieldFloat str config.epsilonDecay }
+
+        EpsilonMin ->
+            { config | epsilonMin = updateFieldFloat str config.epsilonMin }
+
+        RewardAdvance ->
+            { config | rewardAdvance = updateFieldFloat str config.rewardAdvance }
+
+        RewardGreen ->
+            { config | rewardGreen = updateFieldFloat str config.rewardGreen }
+
+        RewardRed ->
+            { config | rewardRed = updateFieldFloat str config.rewardRed }
+
+        RewardDeath ->
+            { config | rewardDeath = updateFieldFloat str config.rewardDeath }
+
+
+encodeConfig : Config -> Encode.Value
+encodeConfig config =
+    Encode.object
+        [ ( "EPISODES", Encode.int (getField config.episodes) )
+        , ( "BATCH_SIZE", Encode.int (getField config.batchSize) )
+        , ( "MAX_STEPS", Encode.int (getField config.maxSteps) )
+        , ( "frame_time_ms", Encode.int (getField config.frameTimeMs) )
+        , ( "board_x", Encode.int (getField config.boardX) )
+        , ( "board_y", Encode.int (getField config.boardY) )
+        , ( "alpha", Encode.float (getField config.alpha) )
+        , ( "gamma", Encode.float (getField config.gamma) )
+        , ( "epsilon", Encode.float (getField config.epsilon) )
+        , ( "epsilon_decay", Encode.float (getField config.epsilonDecay) )
+        , ( "epsilon_min", Encode.float (getField config.epsilonMin) )
+        , ( "reward_advance", Encode.float (getField config.rewardAdvance) )
+        , ( "reward_green", Encode.float (getField config.rewardGreen) )
+        , ( "reward_red", Encode.float (getField config.rewardRed) )
+        , ( "reward_death", Encode.float (getField config.rewardDeath) )
+        ]
+
+
 
 -- PORTS
 
@@ -171,49 +239,74 @@ type Msg
     | UpdateConfig ConfigField String
 
 
+type alias WasmMessage =
+    { msgType : String
+    , source : String
+    , content : String
+    }
+
+
+decodeWasmMessage : Decode.Value -> Result Decode.Error WasmMessage
+decodeWasmMessage =
+    Decode.decodeValue
+        (Decode.map3 WasmMessage
+            (Decode.field "type" Decode.string)
+            (Decode.field "source" Decode.string)
+            (Decode.field "content" Decode.string)
+        )
+
+
+type EpisodeDoneKind
+    = EpisodeComplete String
+    | TrainingComplete String
+
+
+classifyEpisodeDone : String -> EpisodeDoneKind
+classifyEpisodeDone content =
+    if String.startsWith "Training complete" content then
+        TrainingComplete content
+
+    else
+        EpisodeComplete content
+
+
 applyWasmMessage : WasmMessage -> Model -> Model
 applyWasmMessage wasmMsg model =
-    model
-        |> addToHistory wasmMsg
-        |> applyContent wasmMsg
-
-
-applyContent : WasmMessage -> Model -> Model
-applyContent wasmMsg model =
+    let
+        withHistory =
+            { model | receivedMessages = model.receivedMessages ++ [ wasmMsg ] }
+    in
     case wasmMsg.msgType of
         "board" ->
-            { model | board = parseBoard wasmMsg.content }
+            { withHistory | board = parseBoard wasmMsg.content }
 
         "log" ->
-            { model | logs = model.logs ++ [ Log wasmMsg.content ] }
+            { withHistory | logs = model.logs ++ [ Log wasmMsg.content ] }
 
         "error" ->
-            { model | logs = model.logs ++ [ Error wasmMsg.content ] }
+            { withHistory | logs = model.logs ++ [ Error wasmMsg.content ] }
 
         "episode_done" ->
-            if String.startsWith "Training complete" wasmMsg.content then
-                { model
-                    | logs = model.logs ++ [ Log wasmMsg.content ]
+            case classifyEpisodeDone wasmMsg.content of
+                EpisodeComplete msg ->
+                    { withHistory
+                        | logs = model.logs ++ [ Log msg ]
+                        , replayIndex = Just (List.length withHistory.receivedMessages - 1)
+                    }
 
-                    -- TODO this is not being called, ever. Something must be done!
-                    , replayIndex = Just (List.length model.receivedMessages - 1)
-                    , receivedMessages = []
-                    , training = False
-                }
-
-            else
-                { model
-                    | logs = model.logs ++ [ Log wasmMsg.content ]
-                    , replayIndex = Just (List.length model.receivedMessages - 1)
-                }
+                TrainingComplete msg ->
+                    -- Training is done: log it, flag training as stopped,
+                    -- set replay to the last frame, and clear the message buffer
+                    -- so the replay starts clean.
+                    { withHistory
+                        | logs = model.logs ++ [ Log msg ]
+                        , training = False
+                        , replayIndex = Just (List.length withHistory.receivedMessages - 1)
+                        , receivedMessages = []
+                    }
 
         _ ->
-            { model | logs = model.logs ++ [ Error ("unknown message type " ++ wasmMsg.content) ] }
-
-
-addToHistory : WasmMessage -> Model -> Model
-addToHistory wasmMsg model =
-    { model | receivedMessages = model.receivedMessages ++ [ wasmMsg ] }
+            { withHistory | logs = model.logs ++ [ Error ("unknown message type: " ++ wasmMsg.msgType) ] }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -236,8 +329,8 @@ update msg model =
                         [ ( "type", Encode.string "MANUAL" )
                         , ( "value"
                           , Encode.object
-                                [ ( "board_x", Encode.int model.config.boardX )
-                                , ( "board_y", Encode.int model.config.boardY )
+                                [ ( "board_x", Encode.int (getField model.config.boardX) )
+                                , ( "board_y", Encode.int (getField model.config.boardY) )
                                 ]
                           )
                         ]
@@ -270,9 +363,7 @@ update msg model =
         GotWasmMessage value ->
             case decodeWasmMessage value of
                 Ok wasmMsg ->
-                    ( applyWasmMessage wasmMsg model
-                    , Cmd.none
-                    )
+                    ( applyWasmMessage wasmMsg model, Cmd.none )
 
                 Err _ ->
                     ( { model | logs = model.logs ++ [ Error "Failed to decode WASM message" ] }
@@ -280,15 +371,12 @@ update msg model =
                     )
 
         UpdateConfig field str ->
-            ( { model
-                | config = updateConfig field str model.config
-              }
-            , Cmd.none
-            )
+            ( { model | config = updateConfig field str model.config }, Cmd.none )
 
         StartReplay ->
             case model.replayIndex of
                 Just _ ->
+                    -- Replay already in progress
                     ( model, Cmd.none )
 
                 Nothing ->
@@ -310,23 +398,22 @@ update msg model =
 
                 Just idx ->
                     let
-                        msgFromEnd =
+                        -- receivedMessages is oldest-first; we replay from idx down to 0
+                        currentMsg =
                             model.receivedMessages
                                 |> List.reverse
                                 |> List.drop idx
                                 |> List.head
                     in
-                    case msgFromEnd of
+                    case currentMsg of
                         Nothing ->
-                            ( { model | replayIndex = Nothing }
-                            , Cmd.none
-                            )
+                            ( { model | replayIndex = Nothing }, Cmd.none )
 
                         Just wasmMsg ->
                             let
                                 ( updatedModel, nextIndex, cmd ) =
                                     if idx <= 0 then
-                                        ( applyContent wasmMsg { model | receivedMessages = [] }
+                                        ( applyWasmMessage wasmMsg { model | receivedMessages = [] }
                                         , Nothing
                                         , sendToJs
                                             (Encode.object
@@ -337,40 +424,19 @@ update msg model =
                                         )
 
                                     else
-                                        ( applyContent wasmMsg model, Just (idx - 1), Cmd.none )
+                                        ( applyWasmMessage wasmMsg model, Just (idx - 1), Cmd.none )
                             in
-                            ( { updatedModel | replayIndex = nextIndex }
-                            , cmd
-                            )
-
-
-type alias WasmMessage =
-    { msgType : String
-    , source : String
-    , content : String
-    }
-
-
-decodeWasmMessage : Decode.Value -> Result Decode.Error WasmMessage
-decodeWasmMessage value =
-    Decode.decodeValue
-        (Decode.map3 WasmMessage
-            (Decode.field "type" Decode.string)
-            (Decode.field "source" Decode.string)
-            (Decode.field "content" Decode.string)
-        )
-        value
+                            ( { updatedModel | replayIndex = nextIndex }, cmd )
 
 
 parseBoard : String -> Maybe Board
 parseBoard content =
     let
-        lines =
-            String.lines content
-                |> List.filter (not << String.isEmpty)
-
         rows =
-            List.map parseLine lines
+            content
+                |> String.lines
+                |> List.filter (not << String.isEmpty)
+                |> List.map parseLine
     in
     if List.isEmpty rows then
         Nothing
@@ -380,9 +446,8 @@ parseBoard content =
 
 
 parseLine : String -> List Cell
-parseLine line =
-    String.toList line
-        |> List.map charToCell
+parseLine =
+    String.toList >> List.map charToCell
 
 
 charToCell : Char -> Cell
@@ -407,55 +472,6 @@ charToCell char =
             Empty
 
 
-updateConfig : ConfigField -> String -> Config -> Config
-updateConfig field value config =
-    case field of
-        Episodes ->
-            { config | episodes = updateFieldInt value config.episodes }
-
-        BatchSize ->
-            { config | batchSize = updateFieldInt value config.batchSize }
-
-        MaxSteps ->
-            { config | maxSteps = updateFieldInt value config.maxSteps }
-
-        FrameTime ->
-            { config | frame_time_ms = updateFieldInt value config.frame_time_ms }
-
-        BoardX ->
-            { config | boardX = updateFieldInt value config.boardX }
-
-        BoardY ->
-            { config | boardY = updateFieldInt value config.boardY }
-
-        Alpha ->
-            { config | alpha = updateFieldFloat value config.alpha }
-
-        Gamma ->
-            { config | gamma = updateFieldFloat value config.gamma }
-
-        Epsilon ->
-            { config | epsilon = updateFieldFloat value config.epsilon }
-
-        EpsilonDecay ->
-            { config | epsilonDecay = updateFieldFloat value config.epsilonDecay }
-
-        EpsilonMin ->
-            { config | epsilonMin = updateFieldFloat value config.epsilonMin }
-
-        RewardAdvance ->
-            { config | rewardAdvance = updateFieldFloat value config.rewardAdvance }
-
-        RewardGreen ->
-            { config | rewardGreen = updateFieldFloat value config.rewardGreen }
-
-        RewardRed ->
-            { config | rewardRed = updateFieldFloat value config.rewardRed }
-
-        RewardDeath ->
-            { config | rewardDeath = updateFieldFloat value config.rewardDeath }
-
-
 
 -- VIEW
 
@@ -463,14 +479,13 @@ updateConfig field value config =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ div [ class "game-section", preventDefaultOn "keydown" arrowKeyPreventDecoder ]
+        [ div [ class "game-section", preventDefaultOn "keydown" arrowKeyDecoder ]
             [ h3 [] [ text "Game Board" ]
             , viewBoard model.board
-            , viewControles
+            , viewControls
             ]
         , div [ class "info-section" ]
-            [ viewLogs model.logs
-            ]
+            [ viewLogs model.logs ]
         , div [ class "input-section" ]
             [ viewAppControl model
             , viewConfig model.config
@@ -482,14 +497,11 @@ viewBoard : Maybe Board -> Html Msg
 viewBoard maybeBoard =
     case maybeBoard of
         Nothing ->
-            div [ class "board-placeholder" ]
-                [ text "Waiting for board data..." ]
+            div [ class "board-placeholder" ] [ text "Waiting for board data..." ]
 
         Just board ->
             table [ class "game-board" ]
-                [ tbody []
-                    (List.map viewRow board.rows)
-                ]
+                [ tbody [] (List.map viewRow board.rows) ]
 
 
 viewRow : List Cell -> Html Msg
@@ -520,12 +532,11 @@ viewCell cell =
                 Red ->
                     ( "cell-red", "R" )
     in
-    td [ class ("cell " ++ cellClass) ]
-        [ text cellChar ]
+    td [ class ("cell " ++ cellClass) ] [ text cellChar ]
 
 
-viewControles : Html Msg
-viewControles =
+viewControls : Html Msg
+viewControls =
     div [ class "controles" ]
         [ button [ onClick (SendStep "UP") ] [ text "up" ]
         , button [ onClick (SendStep "DOWN") ] [ text "down" ]
@@ -534,40 +545,44 @@ viewControles =
         ]
 
 
-viewField : String -> Html Msg -> Html Msg
-viewField labelText inputElement =
-    span [ class "config-field" ]
-        [ label [] [ text labelText ]
-        , inputElement
+viewAppControl : Model -> Html Msg
+viewAppControl model =
+    div [ class "control-buttons", preventDefaultOn "keydown" arrowKeyDecoder ]
+        [ button [ onClick SendManual ] [ text "Manual play" ]
+        , button [ onClick SendAI ] [ text "AI play" ]
+        , if model.training then
+            button [ onClick SendStopTrain ] [ text "Stop Training" ]
+
+          else
+            button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
         ]
 
 
-viewIntField : String -> ConfigField -> Int -> Html Msg
-viewIntField labelText field current =
-    viewField labelText <|
-        input
-            [ type_ "number", value (String.fromInt current), onInput (UpdateConfig field) ]
-            []
+viewIntField : String -> ConfigField -> Field Int -> Html Msg
+viewIntField labelText field f =
+    span [ class "config-field" ]
+        [ label [] [ text labelText ]
+        , input [ type_ "number", value f.raw, onInput (UpdateConfig field) ] []
+        ]
 
 
-viewFloatField : String -> ConfigField -> Float -> Html Msg
-viewFloatField labelText field current =
-    viewField labelText <|
-        input
-            [ type_ "number", step "0.01", value (String.fromFloat current), onInput (UpdateConfig field) ]
-            []
+viewFloatField : String -> ConfigField -> Field Float -> Html Msg
+viewFloatField labelText field f =
+    span [ class "config-field" ]
+        [ label [] [ text labelText ]
+        , input [ type_ "number", step "0.1", value f.raw, onInput (UpdateConfig field) ] []
+        ]
 
 
 viewConfig : Config -> Html Msg
 viewConfig config =
     div [ class "config" ]
         [ h3 [] [ text "Training Configuration" ]
-        , div
-            [ class "config-grid" ]
+        , div [ class "config-grid" ]
             [ viewIntField "Episodes" Episodes config.episodes
             , viewIntField "Batch Size" BatchSize config.batchSize
             , viewIntField "Max Steps" MaxSteps config.maxSteps
-            , viewIntField "Frame Time (ms)" FrameTime config.frame_time_ms
+            , viewIntField "Frame Time (ms)" FrameTime config.frameTimeMs
             , viewIntField "Board X" BoardX config.boardX
             , viewIntField "Board Y" BoardY config.boardY
             , viewFloatField "Alpha" Alpha config.alpha
@@ -580,40 +595,6 @@ viewConfig config =
             , viewFloatField "Reward Red" RewardRed config.rewardRed
             , viewFloatField "Reward Death" RewardDeath config.rewardDeath
             ]
-        ]
-
-
-encodeConfig : Config -> Encode.Value
-encodeConfig config =
-    Encode.object
-        [ ( "EPISODES", Encode.int config.episodes )
-        , ( "BATCH_SIZE", Encode.int config.batchSize )
-        , ( "MAX_STEPS", Encode.int config.maxSteps )
-        , ( "frame_time_ms", Encode.int config.frame_time_ms )
-        , ( "board_x", Encode.int config.boardX )
-        , ( "board_y", Encode.int config.boardY )
-        , ( "alpha", Encode.float config.alpha )
-        , ( "gamma", Encode.float config.gamma )
-        , ( "epsilon", Encode.float config.epsilon )
-        , ( "epsilon_decay", Encode.float config.epsilonDecay )
-        , ( "epsilon_min", Encode.float config.epsilonMin )
-        , ( "reward_advance", Encode.float config.rewardAdvance )
-        , ( "reward_green", Encode.float config.rewardGreen )
-        , ( "reward_red", Encode.float config.rewardRed )
-        , ( "reward_death", Encode.float config.rewardDeath )
-        ]
-
-
-viewAppControl : Model -> Html Msg
-viewAppControl model =
-    div [ class "control-buttons", preventDefaultOn "keydown" arrowKeyPreventDecoder ]
-        [ button [ onClick SendManual ] [ text "Manual play" ]
-        , button [ onClick SendAI ] [ text "AI play" ]
-        , if model.training then
-            button [ onClick SendStopTrain ] [ text "Stop Training" ]
-
-          else
-            button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
         ]
 
 
@@ -635,48 +616,14 @@ viewLog : LogType -> Html Msg
 viewLog entry =
     case entry of
         Log message ->
-            div [ class "log-entry" ]
-                [ text message ]
+            div [ class "log-entry" ] [ text message ]
 
         Error message ->
-            div [ class "error-entry" ]
-                [ text message ]
+            div [ class "error-entry" ] [ text message ]
 
 
-
--- HELPERS
-
-
-parseInt : String -> Int -> Int
-parseInt str fallback =
-    if String.isEmpty str then
-        0
-
-    else
-        case String.toInt str of
-            Just n ->
-                n
-
-            Nothing ->
-                fallback
-
-
-parseFloat : String -> Float -> Float
-parseFloat str fallback =
-    if String.isEmpty str then
-        0
-
-    else
-        case String.toFloat str of
-            Just n ->
-                n
-
-            Nothing ->
-                fallback
-
-
-keyToStepMsg : String -> Maybe Msg
-keyToStepMsg rawKey =
+keyToDirection : String -> Maybe String
+keyToDirection rawKey =
     let
         key =
             String.toLower rawKey
@@ -687,31 +634,24 @@ keyToStepMsg rawKey =
             , ( [ "arrowleft", "h", "a" ], "LEFT" )
             , ( [ "arrowright", "l", "d" ], "RIGHT" )
             ]
-
-        match =
-            List.filter (\( keys, _ ) -> List.member key keys) mappings
-                |> List.head
     in
-    case match of
-        Just ( _, direction ) ->
-            Just (SendStep direction)
-
-        Nothing ->
-            Nothing
+    mappings
+        |> List.filter (\( keys, _ ) -> List.member key keys)
+        |> List.head
+        |> Maybe.map Tuple.second
 
 
-arrowKeyPreventDecoder : Decode.Decoder ( Msg, Bool )
-arrowKeyPreventDecoder =
+arrowKeyDecoder : Decode.Decoder ( Msg, Bool )
+arrowKeyDecoder =
     Decode.field "key" Decode.string
         |> Decode.andThen
             (\key ->
-                case keyToStepMsg key of
-                    Just msg ->
-                        -- True = preventDefault()
-                        Decode.succeed ( msg, True )
+                case keyToDirection key of
+                    Just direction ->
+                        Decode.succeed ( SendStep direction, True )
 
                     Nothing ->
-                        Decode.fail "Not an arrow key"
+                        Decode.fail "not an arrow key"
             )
 
 
@@ -725,7 +665,7 @@ subscriptions model =
         [ receiveFromJs GotWasmMessage
         , case model.replayIndex of
             Just _ ->
-                Time.every (toFloat model.config.frame_time_ms) ReplayTick
+                Time.every (toFloat (getField model.config.frameTimeMs)) ReplayTick
 
             Nothing ->
                 Sub.none
