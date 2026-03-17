@@ -177,6 +177,8 @@ summary {
     border-radius: 0.375rem;
     border: 0.0625rem dashed var(--panel-border);
     color: var(--accent);
+    height: 22.05rem;
+    align-content: center;
 }
 
 /* ============================================================
@@ -196,6 +198,7 @@ button {
     font-size: 0.875rem;
     cursor: pointer;
     font-weight: bold;
+    touch-action: manipulation; /* disable tap to zoom */
 }
 
 button:hover {

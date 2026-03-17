@@ -70,7 +70,7 @@ static void handle(const Reader::Train& m, AppState& state) {
         << ", reward_death=" << config.reward_death
         ;
 
-    state.trainer =  Trainer(config);
+    state.trainer = Trainer(config);
     state.trainer.train();
 }
 
@@ -86,7 +86,11 @@ static void handle(const Reader::AI& m, AppState& state) {
 }
 
 static void handle(const Reader::Manual& m, AppState& state) {
-    Logger::log() << m.content;
+    Logger::log() << "Start playing, use buttons, arrow keys, wasd or vim motions!";
+
+    Trainer::Config config = parseConfig(m.content);
+    state.trainer = Trainer(config);
+    state.board = state.trainer.pipe.genBoard(state.rng());
 
     if (state.state == AppState::GS::GameOver) {
         Logger::log() << "Restarting the game with a new random board";

@@ -18,3 +18,27 @@ The reinforment learning algo is implemented in C++, which is then compiled to w
 - [ ] `light-dark` is not supported on my phone :(
 - [ ] actually make it do the thing
 - [ ] rename episode_done to batch_done
+
+## Training params and RL
+
+Notes on a discussion with Pier form the Apero du Code, 5 days later so any mistakes are on my end.
+
+```
+Q(s,a) ← Q(s,a) + α * (r + γ * max_a' Q(s',a') - Q(s,a))
+```
+
+### Alpha
+
+The rate at which the model trains, typically very very low (0.1), each iteraciton only adjusts the model by a little bit, only changing a bit is important if there is lots of variancebetween each learn session. You can pick at random some set of states and see how their action values evolve over time, if very volotile a low alpha means the model is more stable, but slower to learn.
+
+### Gamma
+
+Discount facotor, or impact of future reward. It should always be below 1, else the model values intermidiate useless moves before going for the reward. A low value means the agent is short signted and does not learn the value of taking a longer route for eventual reward.
+
+### Reward
+
+Scale matters, keep everything around 1 and below. Death should maybe be 0, it's already punched becasue no  future rewards can be had. (Idk how this fits in with the model as it is. Maybe 1 for eat apple, 0.2 for red apple, and death is -0.1?
+
+### Epsylon and epsylon decay
+
+Random exploration vs exploitation, how likely the model is to pick at random can be usefull to explore a large number of states at first, and then fine tune to only the best actions. Also these are fine tuning methods and should be focused on once the basic model works, they should be used to optimise the training time.
