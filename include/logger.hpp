@@ -1,20 +1,22 @@
 #pragma once
 #include <iostream>
 #include <sstream>
-#include <string_view>
+#include <string>
 
 namespace Logger {
 
 class LogStream {
 public:
-    LogStream(std::ostream &stream, std::string_view start, std::string_view end)
+    LogStream(std::ostream &stream, const std::string &start, const std::string &end)
         : _stream(stream), _start(start), _end(end) {}
 
     ~LogStream() {
-        std::string_view message = _ss.view();
+        std::string message = _ss.str();
 
-        while (!message.empty() && (message.back() == '\n' || message.back() == '\r'))
-            message.remove_suffix(1);
+        // Trim trailing newline / carriage return
+        while (!message.empty() && (message.back() == '\n' || message.back() == '\r')) {
+            message.pop_back();
+        }
 
         if (message.empty())
             return;
@@ -36,8 +38,8 @@ public:
 
 private:
     std::ostream &_stream;
-    std::string_view _start;
-    std::string_view _end;
+    std::string _start;
+   std::string _end;
     std::ostringstream _ss;
 };
 
@@ -53,8 +55,8 @@ inline LogStream error() {
     return {std::cerr, "ERROR_START[", "]ERROR_END"};
 }
 
-inline LogStream episode_done() {
-    return {std::cout, "EPISODE_DONE_START[", "]EPISODE_DONE_END"};
+inline LogStream batch_done() {
+    return {std::cout, "BATCH_DONE_START[", "]BATCH_DONE_END"};
 }
 
 }

@@ -76,7 +76,7 @@ void Trainer::trainEpisode(bool log) {
         if (log) Logger::board() << board;
     }
     if (log) {
-        Logger::episode_done() << "Episode " 
+        Logger::batch_done() << "Episode " 
                     << _current_ep << "/" << config.EPISODES
                     << " Steps " << step
                     << " Length " << board._snake.size()

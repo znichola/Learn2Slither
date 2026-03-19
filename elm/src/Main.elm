@@ -136,7 +136,7 @@ applyWasmMessage wasmMsg model =
         "error" ->
             { withHistory | logs = model.logs ++ [ Error wasmMsg.content ] }
 
-        "episode_done" ->
+        "batch_done" ->
             case classifyEpisodeDone wasmMsg.content of
                 EpisodeComplete msg ->
                     { withHistory
