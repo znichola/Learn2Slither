@@ -85,7 +85,7 @@
         }
 
         // Create parser instance
-        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "EPISODE_DONE"]);
+        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "BATCH_DONE"]);
 
         // Handle parsed messages - send to both terminal and Elm
         parser.onMessage = (message) => {
