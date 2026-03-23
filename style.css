@@ -298,7 +298,7 @@ button:hover {
 }
 
 .config-hint::before {
-    content: attr(title);
+    content: attr(aria-label);
     position: absolute;
     left: 0;
     bottom: 100%;
