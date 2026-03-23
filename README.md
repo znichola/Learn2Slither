@@ -39,8 +39,30 @@ Discount facotor, or impact of future reward. It should always be below 1, else 
 
 ### Reward
 
-Scale matters, keep everything around 1 and below. Death should maybe be 0, it's already punched becasue no  future rewards can be had. (Idk how this fits in with the model as it is. Maybe 1 for eat apple, 0.2 for red apple, and death is -0.1?
+Scale matters, keep everything around 1 and below. Death should maybe be 0, it's already punched becasue no  future rewards can be had. (Idk how this fits in with the model as it is. Maybe 1 for eat apple, 0.2 for red apple, and death is -0.1?)
 
 ### Epsylon and epsylon decay
 
 Random exploration vs exploitation, how likely the model is to pick at random can be usefull to explore a large number of states at first, and then fine tune to only the best actions. Also these are fine tuning methods and should be focused on once the basic model works, they should be used to optimise the training time.
+
+
+## Training setup
+
+```
+-Kind of ok training with the single tile state reprisentation
+Episodes 5000
+Batch Size 100
+Max Steps 500
+Frame Time (ms) 100
+Board X 10
+Board Y 10
+Alpha 0.1
+Gamma 0.95
+Epsilon 0
+Epsilon Decay 0.995
+Epsilon Min 0
+Reward Advance -1
+Reward Green 10
+Reward Red -2
+Reward Death -10
+```
