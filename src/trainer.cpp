@@ -32,7 +32,7 @@ void Trainer::AIplay() {
 
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
-        Move action = agent.chooseAction(vision);
+        Move action = agent.chooseActionNoUpdate(vision);
         Board next_board = board.doMove(action, agent.rng());
 
         if (next_board.moveRes == MoveRes::Death)
@@ -63,20 +63,20 @@ void Trainer::trainEpisode(bool log) {
 
         float _reward = reward(next_board.moveRes);
 
-        Vision next_vision(next_board);
-        
-        agent.updateQtable(vision, action, _reward, next_vision);
-        agent.decayEpsilon();
-
-        if (next_board.moveRes == MoveRes::Death)
+        if (next_board.moveRes == MoveRes::Death) {
+            agent.updateQtableOnDeath(vision, action, _reward);
             break;
+        } else {
+            Vision next_vision(next_board);
+            agent.updateQtable(vision, action, _reward, next_vision);
+        }
 
         board = next_board;
 
-        if (log) Logger::board() << vision;
+        if (log) Logger::board() << board;
     }
     if (log) {
-        Logger::board() << Vision(board);
+        Logger::board() << board;
         Logger::batch_done() << "Episode " 
                     << _current_ep << "/" << config.EPISODES
                     << " Steps " << step

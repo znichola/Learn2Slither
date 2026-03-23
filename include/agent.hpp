@@ -25,6 +25,7 @@ public:
     std::unordered_map<State, std::array<float, 4>, State::Hash> q_table;
 
     Move chooseAction(const Vision & vision);
+    Move chooseActionNoUpdate(const Vision & vision);
 
     void updateQtable(const Vision &vision,
                         Move move,
@@ -36,5 +37,16 @@ public:
                         float reward);
 
     void decayEpsilon();
+
+private:
+    std::array<float, 4>& getOrInsertQ(const State& state) {
+        return q_table.try_emplace(state, std::array<float,4>{}).first->second;
+    }
+
+    std::optional<std::array<float, 4>> getQ(const State& state) const {
+        auto it = q_table.find(state);
+        if (it == q_table.end()) return std::nullopt;
+        return it->second;
+    }
 };
 

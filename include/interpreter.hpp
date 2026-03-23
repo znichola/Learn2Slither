@@ -58,19 +58,69 @@ inline std::ostream& operator<<(std::ostream& os, const Vision v) {
 
 class State {
 public:
-    uint64_t value = 0;  // packed 60 bits
+    std::string value;
 
-    State(const Vision &vision);
+    State(const Vision& vision) {
+        value.reserve(36);
+        for (auto& c : vision._north) value += static_cast<char>(c);
+        for (auto& c : vision._east)  value += static_cast<char>(c);
+        for (auto& c : vision._south) value += static_cast<char>(c);
+        for (auto& c : vision._west)  value += static_cast<char>(c);
+    }
 
-    inline bool operator==(const State& other) const {
+    bool operator==(const State& other) const {
         return value == other.value;
     }
 
-    // Hash functor for std::unordered_map
     struct Hash {
-        inline std::size_t operator()(const State& s) const noexcept {
-            return s.value;
+        std::size_t operator()(const State& s) const noexcept {
+            return std::hash<std::string>{}(s.value);
         }
     };
 };
 
+/*
+
+class State {
+public:
+    std::array<uint64_t, 2> value{};
+
+    State(const Vision& vision) {
+        auto encode = [&](const std::vector<Board::Cell>& arm, int arm_idx) {
+            for (int i = 0; i < (int)arm.size(); ++i)
+                set(arm_idx * 9 + i, arm[i]);
+        };
+        encode(vision._north, 0);
+        encode(vision._east,  1);
+        encode(vision._south, 2);
+        encode(vision._west,  3);
+    }
+
+    bool operator==(const State& other) const {
+        return value == other.value;
+    }
+
+    struct Hash {
+        std::size_t operator()(const State& s) const noexcept {
+            // Multiply w[0] by a large odd constant before XOR-ing w[1].
+            // This breaks symmetry — without it, swapped word pairs would
+            // hash identically and cluster in the same buckets.
+            return s.value[0] * 2654435761ULL ^ s.value[1];
+        }
+    };
+
+private:
+    void set(int i, Board::Cell cell) {
+        // 36 tiles × 3 bits each = 108 bits total.
+        // Split across two uint64_t: word 0 holds tiles 0–20 (63 bits used),
+        // word 1 holds tiles 21–35 (45 bits used).
+        int wi = i / 21;       // which word (0 or 1)
+        int b  = (i % 21) * 3; // bit offset within that word
+
+        // Clear the 3-bit slot, then write the new value into it.
+        // ~(7ULL << b) is a mask with 000 at position b and 1s everywhere else.
+        value[wi] = (value[wi] & ~(7ULL << b)) | (uint64_t(cell) << b);
+    }
+};
+
+*/
