@@ -13,8 +13,8 @@ public:
     ~LogStream() {
         std::string message = _ss.str();
 
-        // Trim trailing newline / carriage return
-        while (!message.empty() && (message.back() == '\n' || message.back() == '\r')) {
+        // Trim trailing newline
+        while (!message.empty() && (message.back() == '\n')) {
             message.pop_back();
         }
 
