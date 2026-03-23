@@ -15,20 +15,25 @@ Move Agent::chooseAction(const Vision &vision) {
     std::uniform_real_distribution<float> dist(0.f, 1.f);
 
     if (dist(rng) < epsilon) {
-        // Exploring a random action
         std::uniform_int_distribution<int> action_dist(0, NUM_ACTIONS - 1);
-        return actions_key[action_dist(rng)];
+        return static_cast<Move>(action_dist(rng));
     } else {
-        // Exploit the best possible action
         const auto& q_values = q_table[state];
-        int best_index = 0;
-        for (int i = 0; i < NUM_ACTIONS; i++) {
-            if (q_values[i] > q_values[best_index]) {
-                best_index = i;
+        float best_value = q_values[0];
+        std::vector<int> best_indices = {0};
+
+        for (int i = 1; i < NUM_ACTIONS; i++) {
+            if (q_values[i] > best_value) {
+                best_value = q_values[i];
+                best_indices = {i};
+            } else if (q_values[i] == best_value) {
+                // build a vector of equal values, to randomly pick between them
+                best_indices.push_back(i);
             }
         }
-        // TODO if actions have the same q value, choose randomly, now it very often goes up
-        return actions_key[best_index];
+
+        std::uniform_int_distribution<int> dist(0, best_indices.size() - 1);
+        return static_cast<Move>(best_indices[dist(rng)]);
     }
 }
 
@@ -42,11 +47,7 @@ void Agent::updateQtable(const Vision &vision, Move move, float reward,
     auto &next_q_values = q_table.try_emplace(next_state, std::array<float,4>{}).first->second;
 
     float max_next_q = *std::max_element(next_q_values.begin(), next_q_values.end());
-
-    // TODO : remove this junk, remove the action index, bs and keep is simple, stupid
-    auto it = std::find(std::begin(actions_key), std::end(actions_key), move);
-    assert(it != std::end(actions_key));
-    auto action_idx = std::distance(std::begin(actions_key), it);
+    const auto action_idx = static_cast<size_t>(move);
 
     // Qtable update: Q(s,a) ← Q(s,a) + α * (r + γ * max_a' Q(s',a') - Q(s,a))
     q_values[action_idx] += alpha * (reward + gamma * max_next_q - q_values[action_idx]);
@@ -56,10 +57,7 @@ void Agent::updateQtableOnDeath(const Vision &vision, Move move, float reward) {
     auto state = State(vision);
 
     auto &q_values = q_table.try_emplace(state, std::array<float,4>{}).first->second;
-
-    auto it = std::find(std::begin(actions_key), std::end(actions_key), move);
-    assert(it != std::end(actions_key));
-    auto action_idx = std::distance(std::begin(actions_key), it);
+    const auto action_idx = static_cast<size_t>(move);
 
     // Qtable update: Q(s, a) ← Q(s, a) + α * (r - Q(s, a))
     q_values[action_idx] += alpha * (reward - q_values[action_idx]);

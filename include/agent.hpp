@@ -11,9 +11,6 @@
 class Agent {
 public:
     static constexpr int NUM_ACTIONS = 4;
-    static constexpr Move actions_key[NUM_ACTIONS] = {
-        Move::Up, Move::Down, Move::Left, Move::Right
-    };
 
     // Values for updating the Q function
     float alpha;
