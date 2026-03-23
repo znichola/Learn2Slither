@@ -1,7 +1,7 @@
 module App.Config exposing (..)
 
 import Html exposing (Html, div, h3, input, label, span, text)
-import Html.Attributes exposing (class, step, title, type_, value)
+import Html.Attributes exposing (attribute, class, step, type_, value)
 import Html.Events exposing (onInput)
 import Json.Encode as Encode
 
@@ -97,7 +97,7 @@ viewTitle : String -> Field a -> Html msg
 viewTitle labelText f =
     case f.hint of
         Just hint ->
-            label [ title hint, class "config-hint" ] [ text labelText ]
+            label [ attribute "aria-label" hint, class "config-hint" ] [ text labelText ]
 
         Nothing ->
             label [] [ text labelText ]
