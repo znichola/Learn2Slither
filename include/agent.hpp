@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <string>
 #include <random>
+#include <optional>
 
 #include "interpreter.hpp"
 #include "move.hpp"
