@@ -36,7 +36,7 @@ GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE := $(shell date -u +"%Y-%m-%d %H:%M:%S UTC")
 BUILD_INFO := -DGIT_COMMIT="$(GIT_COMMIT)" -DBUILD_DATE="$(BUILD_DATE)"
 
-all: $(NAME) elm.js wasm-serve
+all: elm.js wasm-serve
 
 $(OBJS_PATH)%.o: $(SRCS_PATH)%.cpp
 	@mkdir -p $(@D)
@@ -113,7 +113,7 @@ deps/elm:
 	&& gzip -d elm.gz \
 	&& chmod +x elm
 
-elm.js: elm/src/Main.elm deps/elm
+elm.js: elm/src/Main.elm elm/src/App/Config.elm elm/src/App/Board.elm deps/elm
 	cd elm && ../deps/elm make src/Main.elm --output=../elm.js
 
 elm-clean:

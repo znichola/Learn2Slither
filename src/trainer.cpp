@@ -73,9 +73,10 @@ void Trainer::trainEpisode(bool log) {
 
         board = next_board;
 
-        if (log) Logger::board() << board;
+        if (log) Logger::board() << vision;
     }
     if (log) {
+        Logger::board() << Vision(board);
         Logger::batch_done() << "Episode " 
                     << _current_ep << "/" << config.EPISODES
                     << " Steps " << step

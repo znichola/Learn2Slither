@@ -88,7 +88,7 @@ class WasmOutputParser {
                         this.onMessage({
                             type: pattern.name,
                             source: source,
-                            content: content.trim(),
+                            content: content,
                             raw: workingBuffer.slice(startIdx, contentStart + endMatch.index + endMatch[0].length)
                         });
 

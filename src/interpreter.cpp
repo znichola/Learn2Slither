@@ -1,5 +1,6 @@
 #include "environment.hpp"
 #include "interpreter.hpp"
+#include <assert.h>
 
 Vision::Vision(const Board &board) {
     auto head_it = std::find(
@@ -47,34 +48,70 @@ void loop() {
 
 
 State::State(const Vision &vision) {
-    using Cell = Board::Cell;
-    value = 0;
-    int bitPos = 0;
+    using Cell =  Board::Cell;
+    value = 0U;
 
-    auto packCell = [&](Cell c) {
-        value |= (static_cast<uint64_t>(c) << bitPos);
-        bitPos += 3; // 6 cell types, so 3 bits to reprisent
-    };
-
-    auto packDirection = [&](const std::vector<Cell>& dir) {
-        const int max_vision = 4; // if over 8 it's too big to fit in value!
-        for (int i = 0; i < max_vision; i++) {
-            packCell(i < (int)dir.size() ? dir[i] : Cell::Empty);
+    for (auto c : vision._north) {
+        if (c != Cell::Empty) {
+            value |= ((static_cast<uint64_t>(c) & 0x7ULL) << 0);
+            break;
         }
-
-        Board::Cell closest = Cell::Empty;
-        for (int i = max_vision; i < (int)dir.size(); i++) {
-            if (dir[i] != Cell::Empty) {
-                closest = dir[i];
-                break;
-            }
+    }
+    for (auto c : vision._east) {
+        if (c != Cell::Empty) {
+            value |= ((static_cast<uint64_t>(c) & 0x7ULL) << 3);
+            break;
         }
-        packCell(closest);
-    };
-
-    packDirection(vision._north);
-    packDirection(vision._east);
-    packDirection(vision._south);
-    packDirection(vision._west);
+    }
+    for (auto c : vision._south) {
+        if (c != Cell::Empty) {
+            value |= ((static_cast<uint64_t>(c) & 0x7ULL) << 6);
+            break;
+        }
+    }
+    for (auto c : vision._west) {
+        if (c != Cell::Empty) {
+            value |= ((static_cast<uint64_t>(c) & 0x7ULL) << 9);
+            break;
+        }
+    }
 }
+
+// State::State(const Vision &vision) {
+//     using Cell = Board::Cell;
+//     value = 0;
+//     int bitPos = 0;
+    
+//     auto packCell = [&](Cell c) {
+//         assert(bitPos + 3 <= 64 && "State overflow: too many bits packed");
+//         uint64_t bits = static_cast<uint64_t>(c) & 0x7ULL;
+//         value |= (bits << bitPos);
+//         bitPos += 3;
+//     };
+//     // auto packCell = [&](Cell c) {
+//     //     value |= (static_cast<uint64_t>(c) << bitPos);
+//     //     bitPos += 3; // 6 cell types, so 3 bits to reprisent
+//     // };
+
+//     auto packDirection = [&](const std::vector<Cell>& dir) {
+//         const int max_vision = 4; // if over 8 it's too big to fit in value!
+//         for (int i = 0; i < max_vision; i++) {
+//             packCell(i < (int)dir.size() ? dir[i] : Cell::Empty);
+//         }
+
+//         Board::Cell closest = Cell::Empty;
+//         for (int i = max_vision; i < (int)dir.size(); i++) {
+//             if (dir[i] != Cell::Empty) {
+//                 closest = dir[i];
+//                 break;
+//             }
+//         }
+//         packCell(closest);
+//     };
+
+//     packDirection(vision._north);
+//     packDirection(vision._east);
+//     packDirection(vision._south);
+//     packDirection(vision._west);
+// }
 

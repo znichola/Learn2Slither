@@ -17,6 +17,7 @@ The reinforment learning algo is implemented in C++, which is then compiled to w
 
 - [ ] `light-dark` is not supported on my phone :(
 - [ ] actually make it do the thing
+-  -  [ ] log the new state encounted in a batch
 -  -  [ ] refactor agent view compression, maybe remove it
 - [ ] rename episode_done to batch_done
 

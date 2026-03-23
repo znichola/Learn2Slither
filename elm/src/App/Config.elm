@@ -1,7 +1,7 @@
 module App.Config exposing (..)
 
 import Html exposing (Html, div, h3, input, label, span, text)
-import Html.Attributes exposing (class, step, type_, value)
+import Html.Attributes exposing (class, step, title, type_, value)
 import Html.Events exposing (onInput)
 import Json.Encode as Encode
 
@@ -51,6 +51,7 @@ type alias Field a =
     { raw : String
     , parsed : Maybe a
     , default : a
+    , hint : Maybe String
     }
 
 
@@ -60,22 +61,27 @@ type alias Field a =
 
 fieldInt : Int -> Field Int
 fieldInt n =
-    { raw = String.fromInt n, parsed = Just n, default = n }
+    { raw = String.fromInt n, parsed = Just n, default = n, hint = Nothing }
 
 
 fieldFloat : Float -> Field Float
 fieldFloat n =
-    { raw = String.fromFloat n, parsed = Just n, default = n }
+    { raw = String.fromFloat n, parsed = Just n, default = n, hint = Nothing }
 
 
 updateFieldInt : String -> Field Int -> Field Int
 updateFieldInt str f =
-    { raw = str, parsed = String.toInt str, default = f.default }
+    { f | raw = str, parsed = String.toInt str }
 
 
 updateFieldFloat : String -> Field Float -> Field Float
 updateFieldFloat str f =
-    { raw = str, parsed = String.toFloat str, default = f.default }
+    { f | raw = str, parsed = String.toFloat str }
+
+
+updateFieldHint : String -> Field a -> Field a
+updateFieldHint hint f =
+    { f | hint = Just hint }
 
 
 getField : Field a -> a
@@ -87,10 +93,20 @@ getField field =
 -- VIEW
 
 
+viewTitle : String -> Field a -> Html msg
+viewTitle labelText f =
+    case f.hint of
+        Just hint ->
+            label [ title hint, class "config-hint" ] [ text labelText ]
+
+        Nothing ->
+            label [] [ text labelText ]
+
+
 viewIntField : String -> ConfigField -> Field Int -> (ConfigField -> String -> msg) -> Html msg
 viewIntField labelText field f toMsg =
     span [ class "config-field" ]
-        [ label [] [ text labelText ]
+        [ viewTitle labelText f
         , input [ type_ "number", value f.raw, onInput (toMsg field) ] []
         ]
 
@@ -98,7 +114,7 @@ viewIntField labelText field f toMsg =
 viewFloatField : String -> ConfigField -> Field Float -> (ConfigField -> String -> msg) -> Html msg
 viewFloatField labelText field f toMsg =
     span [ class "config-field" ]
-        [ label [] [ text labelText ]
+        [ viewTitle labelText f
         , input [ type_ "number", step "0.1", value f.raw, onInput (toMsg field) ] []
         ]
 
