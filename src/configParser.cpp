@@ -27,7 +27,7 @@ Trainer::Config parseConfig(const std::string &configStr) {
 
         // Map key to struct fields
         if (key == "EPISODES") config.EPISODES = static_cast<unsigned>(value);
-        else if (key == "BATCH_SIZE") config.BATCH_SIZE = static_cast<unsigned>(value);
+        else if (key == "SAMPLE_PER_REPLAY") config.SAMPLE_PER_REPLAY = static_cast<unsigned>(value);
         else if (key == "MAX_STEPS") config.MAX_STEPS = static_cast<unsigned>(value);
         else if (key == "frame_time_ms") config.frame_time_ms = static_cast<unsigned>(value);
         else if (key == "board_x") config.board_x = static_cast<unsigned>(value);

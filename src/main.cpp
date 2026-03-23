@@ -54,7 +54,7 @@ static void handle(const Reader::Train& m, AppState& state) {
 
     Logger::log() << "Parsed config: " 
         << "EPISODES=" << config.EPISODES << "\n"
-        << ", batch_size=" << config.BATCH_SIZE
+        << ", SAMPLE_PER_REPLAY=" << config.SAMPLE_PER_REPLAY
         << ", frame_time_ms=" << config.frame_time_ms
         << ", MAX_STEPS=" << config.MAX_STEPS
         << ", board_x=" << config.board_x

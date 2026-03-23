@@ -94,7 +94,7 @@ void Trainer::train() {
     }
 
     unsigned remaining = config.EPISODES - _current_ep;
-    unsigned toRun = std::min(config.BATCH_SIZE, remaining);
+    unsigned toRun = std::min(config.SAMPLE_PER_REPLAY, remaining);
 
     for (unsigned i = 0; i < toRun; ++i) {
 

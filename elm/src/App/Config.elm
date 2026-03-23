@@ -12,7 +12,7 @@ import Json.Encode as Encode
 
 type ConfigField
     = Episodes
-    | BatchSize
+    | SamplePerReplay
     | MaxSteps
     | FrameTime
     | BoardX
@@ -30,7 +30,7 @@ type ConfigField
 
 type alias Config =
     { episodes : Field Int
-    , batchSize : Field Int
+    , samplePerReplay : Field Int
     , maxSteps : Field Int
     , frameTimeMs : Field Int
     , boardX : Field Int
@@ -125,7 +125,7 @@ viewConfig config toMsg =
         [ h3 [] [ text "Training Configuration" ]
         , div [ class "config-grid" ]
             [ viewIntField "Episodes" Episodes config.episodes toMsg
-            , viewIntField "Batch Size" BatchSize config.batchSize toMsg
+            , viewIntField "Sample per Replay" SamplePerReplay config.samplePerReplay toMsg
             , viewIntField "Max Steps" MaxSteps config.maxSteps toMsg
             , viewIntField "Frame Time (ms)" FrameTime config.frameTimeMs toMsg
             , viewIntField "Board X" BoardX config.boardX toMsg
@@ -153,8 +153,8 @@ updateConfig field str config =
         Episodes ->
             { config | episodes = updateFieldInt str config.episodes }
 
-        BatchSize ->
-            { config | batchSize = updateFieldInt str config.batchSize }
+        SamplePerReplay ->
+            { config | samplePerReplay = updateFieldInt str config.samplePerReplay }
 
         MaxSteps ->
             { config | maxSteps = updateFieldInt str config.maxSteps }
@@ -204,7 +204,7 @@ encodeConfig : Config -> Encode.Value
 encodeConfig config =
     Encode.object
         [ ( "EPISODES", Encode.int (getField config.episodes) )
-        , ( "BATCH_SIZE", Encode.int (getField config.batchSize) )
+        , ( "SAMPLE_PER_REPLAY", Encode.int (getField config.samplePerReplay) )
         , ( "MAX_STEPS", Encode.int (getField config.maxSteps) )
         , ( "frame_time_ms", Encode.int (getField config.frameTimeMs) )
         , ( "board_x", Encode.int (getField config.boardX) )

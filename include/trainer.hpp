@@ -9,7 +9,7 @@ class Trainer {
 public:
     struct Config {
         unsigned EPISODES = 9000;
-        unsigned BATCH_SIZE = EPISODES / 10;
+        unsigned SAMPLE_PER_REPLAY = EPISODES / 10;
         unsigned frame_time_ms = 100; 
         unsigned MAX_STEPS = 2000;
         unsigned board_x = 10;

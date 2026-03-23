@@ -46,7 +46,7 @@ init _ =
 defaultConfig : Config
 defaultConfig =
     { episodes = fieldInt 5000
-    , batchSize = fieldInt 100 |> updateFieldHint "Samples before training animation is played."
+    , samplePerReplay = fieldInt 100 |> updateFieldHint "Samples before training animation is played."
     , maxSteps = fieldInt 500 |> updateFieldHint "Max steps per episode before stop."
     , frameTimeMs = fieldInt 100 |> updateFieldHint "During playback the delay between frames in ms."
     , boardX = fieldInt 10
