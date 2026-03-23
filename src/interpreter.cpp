@@ -46,6 +46,27 @@ void loop() {
                   });
 }
 
+/*
+
+class State {
+public:
+    uint64_t value = 0;
+
+    State(const Vision &vision);
+
+    inline bool operator==(const State& other) const {
+        return value == other.value;
+    }
+
+    // Hash functor for std::unordered_map
+    struct Hash {
+        inline std::size_t operator()(const State& s) const noexcept {
+            return s.value;
+        }
+    };
+};
+
+
 
 State::State(const Vision &vision) {
     using Cell =  Board::Cell;
@@ -76,6 +97,9 @@ State::State(const Vision &vision) {
         }
     }
 }
+
+*/
+
 
 // State::State(const Vision &vision) {
 //     using Cell = Board::Cell;

@@ -9,7 +9,7 @@
 
 class Board {
 public:
-    enum class Cell {Empty, Wall, Head, Snake, Green, Red};
+    enum class Cell {Empty=0, Wall=1, Snake=2, Green=3, Red=4, Head=5};
     typedef std::pair<Board, unsigned> Op;
 
     unsigned int x_dim = 10;
