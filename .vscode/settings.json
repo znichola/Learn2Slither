@@ -1,0 +1,6 @@
+{
+    "elmLand.entrypointFilepaths": [
+        "elm/Main.elm",
+        ".elm-land/src/Main.elm"
+    ]
+}
