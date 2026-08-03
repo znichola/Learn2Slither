@@ -214,6 +214,7 @@ button:hover {
 
 .control-buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.75rem;
     justify-content: center;
     /* margin-top: 1rem; */
@@ -221,6 +222,26 @@ button:hover {
         border-radius: var(--corner-radius);
         border-width: 0.225rem;
     }
+}
+
+.config-field select {
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--corner-radius);
+    border: 0.0625rem solid var(--panel-border);
+    background-color: var(--empty-bg);
+    color: var(--text);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.config-field select:hover {
+    border-color: var(--blue-bg);
+}
+
+.config-field select:focus {
+    outline: none;
+    border-color: var(--blue-bg);
+    box-shadow: 0 0 0 2px rgba(92, 124, 255, 0.2);
 }
 
 /* ============================================================

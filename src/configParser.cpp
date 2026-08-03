@@ -16,6 +16,8 @@ Trainer::Config parseConfig(const std::string &configStr) {
     auto begin = std::sregex_iterator(configStr.begin(), configStr.end(), pairRegex);
     auto end = std::sregex_iterator();
 
+    Logger::error() << configStr << "\n";
+
     for (auto it = begin; it != end; ++it) {
         std::smatch match = *it;
 
@@ -24,6 +26,8 @@ Trainer::Config parseConfig(const std::string &configStr) {
 
         // Convert to float first (works for both int and float)
         float value = std::stof(valueStr);
+
+        Logger::log() << "FOOOOOO: " << key << " : " << value << " : " << valueStr << "\n";
 
         // Map key to struct fields
         if (key == "EPISODES") config.EPISODES = static_cast<unsigned>(value);
@@ -38,6 +42,7 @@ Trainer::Config parseConfig(const std::string &configStr) {
         else if (key == "epsilon") config.epsilon = value;
         else if (key == "epsilon_decay") config.epsilon_decay = value;
         else if (key == "epsilon_min") config.epsilon_min = value;
+        else if (key == "statefn") config.stateFn = State::parse(valueStr);
 
         else if (key == "reward_advance") config.reward_advance = value;
         else if (key == "reward_green") config.reward_green = value;
@@ -49,5 +54,33 @@ Trainer::Config parseConfig(const std::string &configStr) {
         }
     }
 
+
     return config;
+}
+
+
+std::string serialiseConfig(const Trainer::Config &config) {
+    std::ostringstream oss;
+    oss << "{"
+        << "\"EPISODES\":" << config.EPISODES << ","
+        << "\"SAMPLE_PER_REPLAY\":" << config.SAMPLE_PER_REPLAY << ","
+        << "\"MAX_STEPS\":" << config.MAX_STEPS << ","
+        << "\"frame_time_ms\":" << config.frame_time_ms << ","
+        << "\"board_x\":" << config.board_x << ","
+        << "\"board_y\":" << config.board_y << ","
+
+        << "\"alpha\":" << config.alpha << ","
+        << "\"gamma\":" << config.gamma << ","
+        << "\"epsilon\":" << config.epsilon << ","
+        << "\"epsilon_decay\":" << config.epsilon_decay << ","
+        << "\"epsilon_min\":" << config.epsilon_min << ","
+        << "\"statefn\":\"" << State::serialise(config.stateFn) << "\","
+
+        << "\"reward_advance\":" << config.reward_advance << ","
+        << "\"reward_green\":" << config.reward_green << ","
+        << "\"reward_red\":" << config.reward_red << ","
+        << "\"reward_death\":" << config.reward_death
+        << "}"
+    ;
+    return oss.str();
 }

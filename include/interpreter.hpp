@@ -56,6 +56,96 @@ inline std::ostream& operator<<(std::ostream& os, const Vision v) {
     return os;
 }
 
+namespace State {
+    typedef std::function<std::string(const Vision&)> StateFn;
+
+    inline std::string full(const Vision &v) {
+        std::string res;
+        res.reserve(36);
+        for (auto& c : v._north) res += static_cast<char>(c);
+        for (auto& c : v._east)  res += static_cast<char>(c);
+        for (auto& c : v._south) res += static_cast<char>(c);
+        for (auto& c : v._west)  res += static_cast<char>(c);
+        return res;
+    }
+
+    inline std::string firstNonEmpty(const Vision &v) {
+        std::string res;
+        res.reserve(4);
+
+        auto compress = [&](const auto& direction) {
+            for (auto& c : direction) {
+                if (c == Board::Cell::Empty) continue;
+                res += static_cast<char>(c);
+                break;
+            }
+        };
+
+        compress(v._north);
+        compress(v._east);
+        compress(v._south);
+        compress(v._west);
+
+        return res;
+    }
+
+    inline std::string firstAndNextNonEmpty(const Vision &v) {
+        std::string res;
+        res.reserve(8);
+
+        auto compress = [&](const auto& direction) {
+            bool first = 0;
+            for (auto& c : direction) {
+                if (first) {
+                    res += static_cast<char>(c);
+                } else {
+                    if (c == Board::Cell::Empty) continue;
+                    res += static_cast<char>(c);
+                    break;
+                }
+            }
+        };
+
+        compress(v._north);
+        compress(v._east);
+        compress(v._south);
+        compress(v._west);
+
+        return res;
+    }
+
+    enum class Type { FULL, FIRST_NON_EMPTY, FIRST_AND_NEXT_NON_EMPTY };
+
+    inline std::string serialise(Type t) {
+        switch (t) {
+            case Type::FULL: return "FULL";
+            case Type::FIRST_NON_EMPTY: return "FIRST_NON_EMPTY";
+            case Type::FIRST_AND_NEXT_NON_EMPTY: return "FIRST_AND_NEXT_NON_EMPTY";
+            default: return "UNKNOWN";
+        }
+    }
+
+    inline Type parse(const std::string& s) {
+        std::cout << "PARSING " << s << "\n";
+        if (s == "FULL") return Type::FULL;
+        if (s == "FIRST_NON_EMPTY") return Type::FIRST_NON_EMPTY;
+        if (s == "FIRST_AND_NEXT_NON_EMPTY") return Type::FIRST_AND_NEXT_NON_EMPTY;
+
+        throw std::invalid_argument("Invalid State::Type string: " + s);
+    }
+
+    inline StateFn get(Type t) {
+        switch (t) {
+            case Type::FULL: return full;
+            case Type::FIRST_NON_EMPTY: return firstNonEmpty;
+            case Type::FIRST_AND_NEXT_NON_EMPTY: return firstAndNextNonEmpty;
+        }
+    }
+
+
+}
+
+/*
 class State {
 public:
     std::string value;
@@ -78,6 +168,7 @@ public:
         }
     };
 };
+*/
 
 /*
 

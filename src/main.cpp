@@ -52,23 +52,7 @@ int main() {
 static void handle(const Reader::Train& m, AppState& state) {
     Trainer::Config config = parseConfig(m.content);
 
-    Logger::log() << "Parsed config: " 
-        << "EPISODES=" << config.EPISODES << "\n"
-        << ", SAMPLE_PER_REPLAY=" << config.SAMPLE_PER_REPLAY
-        << ", frame_time_ms=" << config.frame_time_ms
-        << ", MAX_STEPS=" << config.MAX_STEPS
-        << ", board_x=" << config.board_x
-        << ", board_y=" << config.board_y
-        << ", alpha=" << config.alpha
-        << ", gamma=" << config.gamma
-        << ", epsilon=" << config.epsilon
-        << ", epsilon_decay=" << config.epsilon_decay
-        << ", epsilon_min=" << config.epsilon_min
-        << ", reward_advance=" << config.reward_advance
-        << ", reward_green=" << config.reward_green
-        << ", reward_red=" << config.reward_red
-        << ", reward_death=" << config.reward_death
-        ;
+    Logger::log() << "Parsed config:\n" << serialiseConfig(config);
 
     state.trainer = Trainer(config);
     state.trainer.train();
