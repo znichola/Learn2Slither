@@ -15,13 +15,13 @@ public:
         unsigned board_x = 10;
         unsigned board_y = 10;
 
-
         // Agent config
         float alpha = 0.4f;             // learning rate : 0 < a <= 1
         float gamma = 0.9f;             // discount factor : 0 < g <= 1
         float epsilon = 0.1f;           // exploration random probability
         float epsilon_decay = 0.995f;   // decay rate for epsilon
         float epsilon_min = 0.01f;
+        State::Type stateFn = State::Type::FIRST_NON_EMPTY;
 
         // reward config
         float reward_advance = 0.0f;
@@ -29,7 +29,7 @@ public:
         float reward_red = 1.0f;
         float reward_death = -10.0f;
     };
-    
+
     Config config;
 
     Agent agent;

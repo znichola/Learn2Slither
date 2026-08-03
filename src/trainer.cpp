@@ -13,6 +13,7 @@ Trainer::Trainer(const Config &config)
         .epsilon = config.epsilon,
         .epsilon_decay = config.epsilon_decay,
         .epsilon_min = config.epsilon_min,
+        .state = State::get(config.stateFn),
         .q_table = {}
         }),
       pipe(Board(config.board_x, config.board_y), {

@@ -3,9 +3,9 @@ port module Main exposing (main)
 import App.Board exposing (..)
 import App.Config exposing (..)
 import Browser
-import Html exposing (Html, button, div, h3, input, label, span, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, step, type_, value)
-import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Html exposing (Html, button, div, h3, text)
+import Html.Attributes exposing (class, value)
+import Html.Events exposing (onClick, preventDefaultOn)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time
@@ -60,6 +60,7 @@ defaultConfig =
     , rewardGreen = fieldFloat 10.0
     , rewardRed = fieldFloat -2.0
     , rewardDeath = fieldFloat -10.0
+    , stateFn = Full
     }
 
 
@@ -320,6 +321,8 @@ viewAppControl model =
 
           else
             button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
+        , button [] [ text "Load model" ]
+        , button [] [ text "Save model" ]
         ]
 
 

@@ -20,10 +20,12 @@ public:
     float epsilon_decay;
     float epsilon_min;
 
+    State::StateFn state;
+
     // Random for epsilon greedy
     std::mt19937 rng{std::random_device{}()};
 
-    std::unordered_map<State, std::array<float, 4>, State::Hash> q_table;
+    std::unordered_map<std::string, std::array<float, 4>> q_table;
 
     Move chooseAction(const Vision & vision);
     Move chooseActionNoUpdate(const Vision & vision);
@@ -39,13 +41,16 @@ public:
 
     void decayEpsilon();
 
+    std::string serialiseQTable() const;
+    void parseQTable(const std::string& encoded);
+
 private:
-    std::array<float, 4>& getOrInsertQ(const State& state) {
-        return q_table.try_emplace(state, std::array<float,4>{}).first->second;
+    std::array<float, 4>& getOrInsertQ(const Vision &v) {
+        return q_table.try_emplace(state(v), std::array<float,4>{}).first->second;
     }
 
-    std::optional<std::array<float, 4>> getQ(const State& state) const {
-        auto it = q_table.find(state);
+    std::optional<std::array<float, 4>> getQ(const Vision &v) const {
+        auto it = q_table.find(state(v));
         if (it == q_table.end()) return std::nullopt;
         return it->second;
     }

@@ -1,7 +1,7 @@
 module App.Config exposing (..)
 
-import Html exposing (Html, div, h3, input, label, span, text)
-import Html.Attributes exposing (attribute, class, step, type_, value)
+import Html exposing (Html, div, h3, input, label, option, select, span, text)
+import Html.Attributes exposing (attribute, class, selected, step, type_, value)
 import Html.Events exposing (onInput)
 import Json.Encode as Encode
 
@@ -26,6 +26,7 @@ type ConfigField
     | RewardGreen
     | RewardRed
     | RewardDeath
+    | StateFn
 
 
 type alias Config =
@@ -44,6 +45,7 @@ type alias Config =
     , rewardGreen : Field Float
     , rewardRed : Field Float
     , rewardDeath : Field Float
+    , stateFn : StateType
     }
 
 
@@ -53,6 +55,12 @@ type alias Field a =
     , default : a
     , hint : Maybe String
     }
+
+
+type StateType
+    = Full
+    | FirstNonEmpty
+    | FirstAndNextNonEmpty
 
 
 
@@ -89,6 +97,35 @@ getField field =
     Maybe.withDefault field.default field.parsed
 
 
+stateToString : StateType -> String
+stateToString s =
+    case s of
+        Full ->
+            "FULL"
+
+        FirstNonEmpty ->
+            "FIRST_NON_EMPTY"
+
+        FirstAndNextNonEmpty ->
+            "FIRST_AND_NEXT_NON_EMPTY"
+
+
+stringToState : String -> StateType
+stringToState str =
+    case str of
+        "FULL" ->
+            Full
+
+        "FIRST_NON_EMPTY" ->
+            FirstNonEmpty
+
+        "FIRST_AND_NEXT_NON_EMPTY" ->
+            FirstAndNextNonEmpty
+
+        _ ->
+            Full
+
+
 
 -- VIEW
 
@@ -119,6 +156,33 @@ viewFloatField labelText field f toMsg =
         ]
 
 
+viewEnumField :
+    String
+    -> ConfigField
+    -> StateType
+    -> (ConfigField -> String -> msg)
+    -> Html msg
+viewEnumField labelText field current toMsg =
+    let
+        options =
+            [ Full, FirstNonEmpty, FirstAndNextNonEmpty ]
+    in
+    span [ class "config-field" ]
+        [ label [] [ text labelText ]
+        , select [ onInput (toMsg field) ]
+            (List.map
+                (\opt ->
+                    option
+                        [ value (stateToString opt)
+                        , selected (opt == current)
+                        ]
+                        [ text (stateToString opt) ]
+                )
+                options
+            )
+        ]
+
+
 viewConfig : Config -> (ConfigField -> String -> msg) -> Html msg
 viewConfig config toMsg =
     div [ class "config" ]
@@ -139,6 +203,7 @@ viewConfig config toMsg =
             , viewFloatField "Reward Green" RewardGreen config.rewardGreen toMsg
             , viewFloatField "Reward Red" RewardRed config.rewardRed toMsg
             , viewFloatField "Reward Death" RewardDeath config.rewardDeath toMsg
+            , viewEnumField "State Representation" StateFn config.stateFn toMsg
             ]
         ]
 
@@ -195,6 +260,9 @@ updateConfig field str config =
         RewardDeath ->
             { config | rewardDeath = updateFieldFloat str config.rewardDeath }
 
+        StateFn ->
+            { config | stateFn = stringToState str }
+
 
 
 -- ENCODE
@@ -218,4 +286,5 @@ encodeConfig config =
         , ( "reward_green", Encode.float (getField config.rewardGreen) )
         , ( "reward_red", Encode.float (getField config.rewardRed) )
         , ( "reward_death", Encode.float (getField config.rewardDeath) )
+        , ( "statefn", Encode.string (stateToString config.stateFn) )
         ]
