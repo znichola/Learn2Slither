@@ -9,6 +9,7 @@
 
 class Board {
 public:
+    static constexpr char mapping[] = {'.', 'W', 'S', 'G', 'H'};
     enum class Cell {Empty=0, Wall=1, Snake=2, Green=3, Red=4, Head=5};
     typedef std::pair<Board, unsigned> Op;
 

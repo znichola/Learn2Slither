@@ -84,6 +84,23 @@ void Agent::decayEpsilon() {
     epsilon = std::max(epsilon_min, epsilon * epsilon_decay);
 }
 
+std::string Agent::serialiseQTable() const {
+    std::ostringstream res;
+    res << "{";
+    bool isFirst = true;
+    for (const auto &[s, a] : q_table) {
+        if (isFirst) {
+            isFirst = false; 
+        } else {
+            res << ",";
+        }
+        res << "\n\"" << s << "\":[" << a[0] << "," << a[1] << "," << a[2] << "," << a[3] << "]";
+    }
+    res << "\n}";
+    return res.str();
+}
+
+
 /*
 std::string Agent::serialiseQTable() const {
     constexpr size_t ENTRY_SIZE = sizeof(State) + sizeof(float) * NUM_ACTIONS;

@@ -43,6 +43,8 @@ public:
 
     std::string serialiseQTable() const;
     void parseQTable(const std::string& encoded);
+    // NOTE also remember to pass on the epsilon value, as this is modified during an agent liftime
+    // NOTE also must pass the state function
 
 private:
     std::array<float, 4>& getOrInsertQ(const Vision &v) {

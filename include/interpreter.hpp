@@ -3,12 +3,9 @@
 #include <iostream>
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 
 #include "environment.hpp"
-
-float reward(MoveRes);
-
-void loop();
 
 class Vision {
 public:
@@ -57,15 +54,18 @@ inline std::ostream& operator<<(std::ostream& os, const Vision v) {
 }
 
 namespace State {
+    static char map(Board::Cell c) {
+    return Board::mapping[static_cast<size_t>(c)];
+}
     typedef std::function<std::string(const Vision&)> StateFn;
 
     inline std::string full(const Vision &v) {
         std::string res;
         res.reserve(36);
-        for (auto& c : v._north) res += static_cast<char>(c);
-        for (auto& c : v._east)  res += static_cast<char>(c);
-        for (auto& c : v._south) res += static_cast<char>(c);
-        for (auto& c : v._west)  res += static_cast<char>(c);
+        for (auto& c : v._north) res += map(c);
+        for (auto& c : v._east)  res += map(c);
+        for (auto& c : v._south) res += map(c);
+        for (auto& c : v._west)  res += map(c);
         return res;
     }
 
@@ -76,7 +76,7 @@ namespace State {
         auto compress = [&](const auto& direction) {
             for (auto& c : direction) {
                 if (c == Board::Cell::Empty) continue;
-                res += static_cast<char>(c);
+                res += map(c);
                 break;
             }
         };
@@ -94,13 +94,14 @@ namespace State {
         res.reserve(8);
 
         auto compress = [&](const auto& direction) {
-            bool first = 0;
+            bool first = true;
             for (auto& c : direction) {
                 if (first) {
-                    res += static_cast<char>(c);
+                    res += map(c);
+                    first = false;
                 } else {
                     if (c == Board::Cell::Empty) continue;
-                    res += static_cast<char>(c);
+                    res += map(c);
                     break;
                 }
             }
@@ -140,6 +141,7 @@ namespace State {
             case Type::FIRST_NON_EMPTY: return firstNonEmpty;
             case Type::FIRST_AND_NEXT_NON_EMPTY: return firstAndNextNonEmpty;
         }
+        throw std::runtime_error("Invalid STATE representation");
     }
 
 
@@ -152,10 +154,10 @@ public:
 
     State(const Vision& vision) {
         value.reserve(36);
-        for (auto& c : vision._north) value += static_cast<char>(c);
-        for (auto& c : vision._east)  value += static_cast<char>(c);
-        for (auto& c : vision._south) value += static_cast<char>(c);
-        for (auto& c : vision._west)  value += static_cast<char>(c);
+        for (auto& c : vision._north) value += map(c);
+        for (auto& c : vision._east)  value += map(c);
+        for (auto& c : vision._south) value += map(c);
+        for (auto& c : vision._west)  value += map(c);
     }
 
     bool operator==(const State& other) const {

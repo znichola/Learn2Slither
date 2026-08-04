@@ -39,7 +39,7 @@ public:
 private:
     std::ostream &_stream;
     std::string _start;
-   std::string _end;
+    std::string _end;
     std::ostringstream _ss;
 };
 
@@ -57,6 +57,10 @@ inline LogStream error() {
 
 inline LogStream batch_done() {
     return {std::cout, "BATCH_DONE_START[", "]BATCH_DONE_END"};
+}
+
+inline LogStream save_agent() {
+    return {std::cout, "SAVE_AGENT_START[", "]SAVE_AGENT_END"};
 }
 
 }

@@ -88,6 +88,7 @@ type Msg
     | StartReplay
     | ReplayTick Time.Posix
     | UpdateConfig ConfigField String
+    | SendSaveAgent
 
 
 type alias WasmMessage =
@@ -156,6 +157,9 @@ applyWasmMessage wasmMsg model =
                         , receivedMessages = []
                     }
 
+        "save_agent" ->
+            { withHistory | logs = model.logs ++ [ Log "new agent save" ] }
+
         _ ->
             { withHistory | logs = model.logs ++ [ Error ("unknown message type: " ++ wasmMsg.msgType) ] }
 
@@ -223,6 +227,16 @@ update msg model =
 
         UpdateConfig field str ->
             ( { model | config = updateConfig field str model.config }, Cmd.none )
+
+        SendSaveAgent ->
+            let
+                payload =
+                    Encode.object
+                        [ ( "type", Encode.string "SAVE_AGENT" )
+                        , ( "value", Encode.string "save agent state" )
+                        ]
+            in
+            ( { model | logs = [ Log "Sent AgentSave command to WASM" ], receivedMessages = [] }, sendToJs payload )
 
         StartReplay ->
             case model.replayIndex of
@@ -322,7 +336,7 @@ viewAppControl model =
           else
             button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
         , button [] [ text "Load model" ]
-        , button [] [ text "Save model" ]
+        , button [ onClick SendSaveAgent ] [ text "Save model" ]
         ]
 
 
