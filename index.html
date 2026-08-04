@@ -85,7 +85,7 @@
         }
 
         // Create parser instance
-        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "BATCH_DONE"]);
+        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "BATCH_DONE", "SAVE_AGENT"]);
 
         // Handle parsed messages - send to both terminal and Elm
         parser.onMessage = (message) => {
@@ -99,6 +99,10 @@
                     break;
                 case 'error':
                     termPrint(`[ERROR] ${message.content}`, 'msg-error');
+                    break;
+                case 'save_agent':
+                    termPrint(`[SAVE_AGENT] ${message.content}`, 'msg-log');
+                    saveAgentFile(message.content);
                     break;
                 default:
                     termPrint(`[${message.type.toUpperCase()}] ${message.content}`);

@@ -121,6 +121,33 @@ class WasmOutputParser {
     }
 }
 
+function saveAgentFile(content) {
+    // First line becomes the filename
+    const firstNewline = content.indexOf('\n');
+    const secondNewline = content.indexOf('\n', firstNewline + 1);
+
+    const filename = content
+        .slice(
+            firstNewline + 1,
+            secondNewline === -1 ? content.length : secondNewline
+        )
+        .trim() + ".txt";
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // Give the browser time before revoking
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+
 // Export for use in browser or Node.js
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { WasmOutputParser, createModuleWithParser };

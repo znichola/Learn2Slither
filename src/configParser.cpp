@@ -7,27 +7,28 @@
 Trainer::Config parseConfig(const std::string &configStr) {
     Trainer::Config config;
 
-    // Regex to match: "key" : number
+    // Regex to match: "key" : number or "key" : "value"
     // Captures:
     // 1 -> key
-    // 2 -> numeric value (int or float, including negative)
-    std::regex pairRegex(R"REGEX("([^"]+)"\s*:\s*(-?\d+(\.\d+)?))REGEX");
+    // 2 -> number as string (int or float, including negative)
+    // 3 -> string value with no quotes
+    std::regex pairRegex(R"REGEX("([^"]+)"\s*:\s*(?:(-?\d+(?:\.\d+)?)|"([^"]+)"))REGEX");
 
     auto begin = std::sregex_iterator(configStr.begin(), configStr.end(), pairRegex);
     auto end = std::sregex_iterator();
-
-    Logger::error() << configStr << "\n";
 
     for (auto it = begin; it != end; ++it) {
         std::smatch match = *it;
 
         std::string key = match[1].str();
         std::string valueStr = match[2].str();
+        float value = 0.0;
 
-        // Convert to float first (works for both int and float)
-        float value = std::stof(valueStr);
-
-        Logger::log() << "FOOOOOO: " << key << " : " << value << " : " << valueStr << "\n";
+        if (valueStr == "") {
+            valueStr = match[3].str();
+        } else {
+            value = std::stof(valueStr);
+        }
 
         // Map key to struct fields
         if (key == "EPISODES") config.EPISODES = static_cast<unsigned>(value);

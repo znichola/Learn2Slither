@@ -26,6 +26,7 @@ static void handle(const Reader::Step& m, AppState& state);
 static void handle(const Reader::Train& m, AppState& state);
 static void handle(const Reader::ResumeTrain& m, AppState& state);
 static void handle(const Reader::AI& m, AppState& state);
+static void handle(const Reader::SaveAgent &m, AppState& state);
 
 static void dispatch(const Reader::Message& msg, AppState& state) {
     std::visit([&](auto&& m) { handle(m, state); }, msg);
@@ -115,6 +116,14 @@ static void handle(const Reader::Step& m, AppState& state) {
 
     Logger::log() << "Move command " << m.content << ", result " << state.board.moveRes;
     Logger::board() << state.board;
+}
+
+static void handle(const Reader::SaveAgent& m, AppState& state) {
+    (void)m;
+    Logger::log() << "Saving and sending agent state";
+    Logger::save_agent() << "AGENT_" << state.trainer.agent.rng() << "\n\n"
+                         << "CONFIG\n" << serialiseConfig(state.trainer.config) << "\n\n"
+                         << "QTABLE\n" << state.trainer.agent.serialiseQTable();
 }
 
 AppState initState() {
