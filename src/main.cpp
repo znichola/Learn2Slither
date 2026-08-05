@@ -27,6 +27,7 @@ static void handle(const Reader::Train& m, AppState& state);
 static void handle(const Reader::ResumeTrain& m, AppState& state);
 static void handle(const Reader::AI& m, AppState& state);
 static void handle(const Reader::SaveAgent &m, AppState& state);
+static void handle(const Reader::LoadAgent &m, AppState& state);
 
 static void dispatch(const Reader::Message& msg, AppState& state) {
     std::visit([&](auto&& m) { handle(m, state); }, msg);
@@ -55,6 +56,8 @@ static void handle(const Reader::Train& m, AppState& state) {
 
     Logger::log() << "Parsed config:\n" << serialiseConfig(config);
 
+    // TODO need a seperate start a fresh training and continue training (using existing agent state)
+
     state.trainer = Trainer(config);
     state.trainer.train();
 }
@@ -62,6 +65,7 @@ static void handle(const Reader::Train& m, AppState& state) {
 static void handle(const Reader::ResumeTrain& m, AppState& state) {
     (void)m;
     state.trainer.train();
+    // TODO this feels bugged as all heck. Should be looked at
 }
 
 static void handle(const Reader::AI& m, AppState& state) {
@@ -120,10 +124,41 @@ static void handle(const Reader::Step& m, AppState& state) {
 
 static void handle(const Reader::SaveAgent& m, AppState& state) {
     (void)m;
-    Logger::log() << "Saving and sending agent state";
+    Logger::log() << "Saving and sending agent state ...";
+
+    Logger::log() << "Saved AGENT_" << state.trainer.agent.rng()
+                  << " | State representation: " << State::serialise(state.trainer.config.stateFn)
+                  << " | Q-table entries: " << state.trainer.agent.q_table.size();
+
     Logger::save_agent() << "AGENT_" << state.trainer.agent.rng() << "\n\n"
-                         << "CONFIG\n" << serialiseConfig(state.trainer.config) << "\n\n"
-                         << "QTABLE\n" << state.trainer.agent.serialiseQTable();
+            << "CONFIG\n" << serialiseConfig(state.trainer.config) << "\n\n"
+            << "QTABLE\n" << state.trainer.agent.serialiseQTable();
+}
+
+static void handle(const Reader::LoadAgent& m, AppState& state) {
+    (void)state;
+    Logger::log() << "Loading agent ...";
+    auto agentPos = m.content.find("AGENT_");
+    auto configPos = m.content.find("CONFIG\n");
+    auto qtablePos = m.content.find("QTABLE\n");
+
+    if (agentPos == std::string::npos || agentPos > configPos || agentPos > qtablePos) {
+        Logger::error() << "Load error: missing sections, agent:" << agentPos << " config:" << configPos << " qtable:" << qtablePos;
+        return;
+    }
+
+    const std::string agentName = m.content.substr(agentPos, configPos - agentPos);
+    const std::string agentConfig = m.content.substr(configPos + 7, qtablePos - (configPos + 7));
+    const std::string agentQtable = m.content.substr(qtablePos + 7);
+
+    state.trainer.config = parseConfig(agentConfig);
+    state.trainer.agent.parseQTable(agentQtable);
+
+    Logger::log() << "Loaded " << agentName
+                  << "| State representation: " << State::serialise(state.trainer.config.stateFn)
+                  << "| Q-table entries: " << state.trainer.agent.q_table.size();
+
+    // TODO send the update config message for the UI
 }
 
 AppState initState() {

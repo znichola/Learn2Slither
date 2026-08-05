@@ -1,10 +1,10 @@
 # ============================================================================
-#   Native (clang w/ linux)
+#   Native (clang /gcc w/ linux)
 # ============================================================================
 
 NAME    = snake
 
-CC      = clang++
+CC      = c++
 CFLAGS  = -Wall -Wextra
 CFLAGS  += -Werror
 CFLAGS  += -std=c++20
@@ -129,7 +129,7 @@ EMCC_DOCKER_IMG = emscripten/emsdk
 
 WASM_NAME=$(NAME).js
 
-$(WASM_NAME) : $(SRCS)
+$(WASM_NAME) : $(SRCS) $(MAIN_SRC)
 	docker run --rm -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) \
 		em++ -Wall $(CFLAGS) \
 		-s WASM=1 \
@@ -143,7 +143,7 @@ $(WASM_NAME) : $(SRCS)
 		-s "EXPORTED_FUNCTIONS=['_main','_bridge_deliver','_free', 'stringToNewUTF8','lengthBytesUTF8']" \
 		-s NO_DISABLE_EXCEPTION_CATCHING \
 		$(BUILD_INFO) \
-		-I$(INCS_PATH) $(SRCS) $(MAIN_SRC) \
+		-I$(INCS_PATH) $^ \
 		-o $(WASM_NAME)
 
 wasm-clean:

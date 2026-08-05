@@ -32,9 +32,20 @@
         });
 
         // Elm -> JS: Handle commands from Elm
-        app.ports.sendToJs.subscribe((payload) => {
+        app.ports.sendToJs.subscribe(async (payload) => {
             let value;
-            if (payload.type == "STEP") {
+            if (payload.type === "LOAD_AGENT") {
+                loadTextFile((filename, content) => {
+                    const text =
+                        `LOAD_AGENT_START[\n${content}\n]LOAD_AGENT_END\n`;
+
+                    window.enqueueInput(text);
+                    window.sendToWasm(text);
+
+                    termPrint(`[Elm -> WASM] load_agent("${filename}")`, "msg-log");
+                });
+                return;
+            } else if (payload.type == "STEP") {
                 value = payload.value;
             } else {
                 value = JSON.stringify(payload.value);
