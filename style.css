@@ -85,6 +85,18 @@ summary {
 /* ============================================================
    LAYOUT
    ============================================================ */
+
+.title-group {
+    display: flex; 
+    align-items: center; 
+    gap: 1.0rem;
+}
+
+date,
+commit {
+    font-size: 0.75rem;
+}
+
 .container {
     margin: 0 auto;
     display: grid;

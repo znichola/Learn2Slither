@@ -130,6 +130,7 @@ EMCC_DOCKER_IMG = emscripten/emsdk
 WASM_NAME=$(NAME).js
 
 $(WASM_NAME) : $(SRCS) $(MAIN_SRC)
+	./update_index.sh index.html "$(GIT_COMMIT)" "$(BUILD_DATE)"
 	docker run --rm -v $(PWD):/app -w /app $(EMCC_DOCKER_IMG) \
 		em++ -Wall $(CFLAGS) \
 		-s WASM=1 \
