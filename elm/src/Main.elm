@@ -89,6 +89,7 @@ type Msg
     | ReplayTick Time.Posix
     | UpdateConfig ConfigField String
     | SendSaveAgent
+    | SendLoadAgent
 
 
 type alias WasmMessage =
@@ -236,7 +237,17 @@ update msg model =
                         , ( "value", Encode.string "save agent state" )
                         ]
             in
-            ( { model | logs = [ Log "Sent AgentSave command to WASM" ], receivedMessages = [] }, sendToJs payload )
+            ( { model | logs = [ Log "Sent AgentSave command to WASM" ] }, sendToJs payload )
+
+        SendLoadAgent ->
+            let
+                payload =
+                    Encode.object
+                        [ ( "type", Encode.string "LOAD_AGENT" )
+                        , ( "value", Encode.string "load agent state" )
+                        ]
+            in
+            ( { model | logs = [ Log "Sent AgentSave command to WASM" ] }, sendToJs payload )
 
         StartReplay ->
             case model.replayIndex of
@@ -335,7 +346,7 @@ viewAppControl model =
 
           else
             button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
-        , button [] [ text "Load model" ]
+        , button [ onClick SendLoadAgent ] [ text "Load model" ]
         , button [ onClick SendSaveAgent ] [ text "Save model" ]
         ]
 

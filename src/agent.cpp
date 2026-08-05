@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <sstream>
+#include <regex>
 
 #include "agent.hpp"
 #include "base64.hpp"
@@ -100,6 +101,26 @@ std::string Agent::serialiseQTable() const {
     return res.str();
 }
 
+void Agent::parseQTable(const std::string& encoded) {
+    q_table.clear();
+
+    std::regex pairRegex(R"REGEX("([^"]+)"\s*:\s*\[([^\]]+)\])REGEX");
+
+    for (auto it = std::sregex_iterator(encoded.begin(), encoded.end(), pairRegex);
+         it != std::sregex_iterator(); ++it) {
+
+        const std::string stateString = (*it)[1].str();
+        std::stringstream ss((*it)[2].str());
+
+        auto& weights = q_table[stateString];
+
+        char comma;
+        ss >> weights[0] >> comma
+           >> weights[1] >> comma
+           >> weights[2] >> comma
+           >> weights[3];
+    }
+}
 
 /*
 std::string Agent::serialiseQTable() const {

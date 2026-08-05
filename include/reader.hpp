@@ -22,8 +22,9 @@ struct Step { std::string content; };
 struct Train { std::string content; };
 struct ResumeTrain { std::string content; };
 struct SaveAgent { std::string content; };
+struct LoadAgent { std::string content; };
 
-using Message = std::variant<Manual, AI, Step, Train, ResumeTrain, SaveAgent>;
+using Message = std::variant<Manual, AI, Step, Train, ResumeTrain, SaveAgent, LoadAgent>;
 
 class Parser {
 private:
@@ -41,6 +42,7 @@ private:
         { "TRAIN_START[", "]TRAIN_END", [](std::string c) -> Message { return Train{std::move(c)}; } },
         { "RESUME_TRAIN_START[", "]RESUME_TRAIN_END", [](std::string c) -> Message { return ResumeTrain{std::move(c)}; } },
         { "SAVE_AGENT_START[", "]SAVE_AGENT_END", [](std::string c) -> Message { return SaveAgent{std::move(c)}; } },
+        { "LOAD_AGENT_START[", "]LOAD_AGENT_END", [](std::string c) -> Message { return LoadAgent{std::move(c)}; } },
     };
 
 public:

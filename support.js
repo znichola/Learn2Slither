@@ -147,6 +147,25 @@ function saveAgentFile(content) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+function loadTextFile(onLoad) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".txt";
+    input.multiple = false;
+
+    input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        try {
+            onLoad(file.name, await file.text());
+        } catch (err) {
+            console.error("Failed to read file:", err);
+        }
+    };
+
+    input.click();
+}
 
 // Export for use in browser or Node.js
 if (typeof module !== 'undefined' && module.exports) {
