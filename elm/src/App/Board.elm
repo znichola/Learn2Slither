@@ -14,7 +14,8 @@ type alias Board =
 
 type Cell
     = Wall
-    | Empty
+      -- | Empty
+    | Value Char
     | Snake
     | Head
     | Green
@@ -49,9 +50,11 @@ viewCell cell =
                 Wall ->
                     ( "cell-wall", "W" )
 
-                Empty ->
-                    ( "cell-empty", " " )
+                Value s ->
+                    ( "cell-empty", String.fromChar s )
 
+                -- Empty ->
+                --     ( "cell-empty", "0" )
                 Snake ->
                     ( "cell-snake", "S" )
 
@@ -110,5 +113,5 @@ charToCell char =
         'R' ->
             Red
 
-        _ ->
-            Empty
+        s ->
+            Value s

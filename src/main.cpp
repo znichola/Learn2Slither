@@ -96,6 +96,12 @@ static void handle(const Reader::Manual& m, AppState& state) {
 
 
 static void handle(const Reader::Step& m, AppState& state) {
+    if (m.content == "Toggle snake vision") {
+        Board::toggleSnakeVision();
+        Logger::board() << state.board;
+        return ;
+    }
+
     if (state.state == AppState::GS::GameOver) {
         Logger::error() << "Sorry game over! restart if you want";
         return ;

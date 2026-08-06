@@ -9,7 +9,7 @@
 
 class Board {
 public:
-    static constexpr char mapping[] = {'.', 'W', 'S', 'G', 'R', 'H'};
+    static constexpr char mapping[] = {'0', 'W', 'S', 'G', 'R', 'H'};
     enum class Cell {Empty=0, Wall=1, Snake=2, Green=3, Red=4, Head=5};
     typedef std::pair<Board, unsigned> Op;
 
@@ -38,6 +38,11 @@ public:
     Board doMove(Move m, unsigned seed) const;
 
     unsigned snakeLength() const;
+
+    inline static bool snakeVision = false;
+    static void toggleSnakeVision() {
+        snakeVision = !snakeVision;
+    }
 };
 
 class Pipe {
@@ -70,25 +75,6 @@ public:
 
 
 inline std::ostream& operator<<(std::ostream& os, const Board::Cell c) {
-    switch (c) {
-        case Board::Cell::Empty: os << " "; break;
-        case Board::Cell::Wall: os << "W"; break;
-        case Board::Cell::Head: os << "H"; break;
-        case Board::Cell::Snake: os << "S"; break;
-        case Board::Cell::Green: os << "G"; break;
-        case Board::Cell::Red: os << "R"; break;
-    }
-    return os;
+    return os << Board::mapping[static_cast<size_t>(c)];
 }
 
-inline std::ostream& operator<<(std::ostream& os, const Board& b) {
-    int i = 0;
-    for (const auto cell : b._grid) {
-        os << cell;
-        if ((i + 1) % b.x_dim == 0) {
-            os << "\n";
-        }
-        i++;
-    }
-    return os;
-}
