@@ -74,6 +74,8 @@ void Trainer::trainEpisode(bool log) {
 
     if (log) Logger::board() << board;
 
+    const int maxStepsSinceEat = config.MAX_STEPS / 10;
+    int stepsSinceEat = 0;
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
         Move action = agent.chooseAction(vision);
@@ -89,9 +91,17 @@ void Trainer::trainEpisode(bool log) {
             agent.updateQtable(vision, action, _reward, next_vision);
         }
 
+        if (next_board.moveRes == MoveRes::Green || next_board.moveRes == MoveRes::Red)
+            stepsSinceEat = 0;
+        else
+            stepsSinceEat++;
+        if (stepsSinceEat >= maxStepsSinceEat)
+            break;
+
         board = next_board;
 
         if (log) Logger::board() << board;
+
     }
     if (log) {
         Logger::QTABLE_SIZE(agent.q_table.size());

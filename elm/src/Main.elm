@@ -108,6 +108,7 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 
 type Msg
     = SendStep String
+    | ToggleSnakeVision
     | StartManual
     | StartAI
     | StartTrain
@@ -250,6 +251,11 @@ handleRunDone rawMessage model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ToggleSnakeVision ->
+            ( model
+            , sendToJs (Encode.object [ ( "type", Encode.string "STEP" ), ( "value", Encode.string "Toggle snake vision" ) ])
+            )
+
         SendStep value ->
             ( model
             , sendToJs (Encode.object [ ( "type", Encode.string "STEP" ), ( "value", Encode.string value ) ])
@@ -369,7 +375,8 @@ view model =
 viewStatusDetails : Model -> Html Msg
 viewStatusDetails model =
     div [ class "status-details" ]
-        [ div [] [ text ("Qtable size: " ++ String.fromInt model.qtableSize) ]
+        [ button [ onClick ToggleSnakeVision ] [ text "toggle snake vision" ]
+        , div [] [ text ("Qtable size: " ++ String.fromInt model.qtableSize) ]
         ]
 
 
