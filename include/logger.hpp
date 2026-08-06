@@ -43,6 +43,8 @@ private:
     std::ostringstream _ss;
 };
 
+// All message formats need to also be declared in the index.html when initialising the js message parser
+
 inline LogStream board() {
     return {std::cout, "BOARD_START[", "]BOARD_END"};
 }
@@ -55,12 +57,21 @@ inline LogStream error() {
     return {std::cerr, "ERROR_START[", "]ERROR_END"};
 }
 
-inline LogStream batch_done() {
-    return {std::cout, "BATCH_DONE_START[", "]BATCH_DONE_END"};
+inline LogStream RUN_DONE() {
+    return {std::cout, "RUN_DONE_START[", "]RUN_DONE_END"};
 }
 
 inline LogStream save_agent() {
     return {std::cout, "SAVE_AGENT_START[", "]SAVE_AGENT_END"};
+}
+
+inline void QTABLE_SIZE(const size_t size) {
+    std::cout << "QTABLE_SIZE_START[\n" << size << "\n]QTABLE_SIZE_END";
+    return ;
+}
+
+inline LogStream PUSH_CONFIG() {
+    return {std::cout, "PUSH_CONFIG_START[", "]PUSH_CONFIG_END"};
 }
 
 }

@@ -2,9 +2,10 @@ port module Main exposing (main)
 
 import App.Board exposing (..)
 import App.Config exposing (..)
+import Array exposing (Array)
 import Browser
 import Html exposing (Html, button, div, h3, text)
-import Html.Attributes exposing (class, value)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick, preventDefaultOn)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -12,32 +13,59 @@ import Time
 
 
 
--- MODEL
+-- MODEL & TYPES
 
 
-type alias Model =
-    { board : Maybe Board
-    , logs : List LogType
-    , receivedMessages : List WasmMessage
-    , replayIndex : Maybe Int
-    , config : Config
-    , training : Bool
+type Mode
+    = Manual
+    | AI
+    | Training
+
+
+type alias ActiveSession =
+    { mode : Mode
+    , batch : List Board
+    }
+
+
+type alias Run =
+    { id : Int
+    , message : String
+    , frames : Array Board
+    , playbackIndex : Int
     }
 
 
 type LogType
     = Error String
     | Log String
+    | RunLog Run
+
+
+type alias Model =
+    { board : Maybe Board
+    , logs : List LogType
+    , activeSession : Maybe ActiveSession
+    , replayingRun : Maybe Run
+    , nextRunId : Int
+    , config : Config
+    , qtableSize : Int
+    }
+
+
+
+-- INIT & CONFIG
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { board = Nothing
       , logs = []
-      , receivedMessages = []
-      , replayIndex = Nothing
+      , activeSession = Nothing
+      , replayingRun = Nothing
+      , nextRunId = 1
       , config = defaultConfig
-      , training = False
+      , qtableSize = 0
       }
     , Cmd.none
     )
@@ -45,15 +73,15 @@ init _ =
 
 defaultConfig : Config
 defaultConfig =
-    { episodes = fieldInt 5000
+    { episodes = fieldInt 1000
     , samplePerReplay = fieldInt 100 |> updateFieldHint "Samples before training animation is played."
     , maxSteps = fieldInt 500 |> updateFieldHint "Max steps per episode before stop."
-    , frameTimeMs = fieldInt 100 |> updateFieldHint "During playback the delay between frames in ms."
+    , frameTimeMs = fieldInt 30 |> updateFieldHint "During playback the delay between frames in ms."
     , boardX = fieldInt 10
     , boardY = fieldInt 10
     , alpha = fieldFloat 0.1 |> updateFieldHint "Learning rate. When lower, it's slower but more stable. (0.0 - 1.0)"
     , gamma = fieldFloat 0.95 |> updateFieldHint "Discount factor for future rewards. When higher, the model prioritises future rewards more, but too high and the snake may loop to stay alive rather than risk seeking food. (0.0 - 1.0)"
-    , epsilon = fieldFloat 0.7 |> updateFieldHint "Exploration rate. At 1.0 it will always take random actions. (0.0 - 1.0)"
+    , epsilon = fieldFloat 0.0 |> updateFieldHint "Exploration rate. At 1.0 it will always take random actions. (0.0 - 1.0)"
     , epsilonDecay = fieldFloat 0.995 |> updateFieldHint "Multiplied with epsilon each episode. When lower, exploration drops off faster. Set to 0.0 to remove decay."
     , epsilonMin = fieldFloat 0.0 |> updateFieldHint "Floor for epsilon when using epsilon decay."
     , rewardAdvance = fieldFloat -0.1
@@ -75,21 +103,22 @@ port receiveFromJs : (Decode.Value -> msg) -> Sub msg
 
 
 
--- UPDATE
+-- UPDATE & WASM MESSAGES
 
 
 type Msg
     = SendStep String
-    | SendManual
-    | SendTrain Encode.Value
+    | StartManual
+    | StartAI
+    | StartTrain
     | SendStopTrain
-    | SendAI
+    | SendTrainMore
     | GotWasmMessage Decode.Value
-    | StartReplay
     | ReplayTick Time.Posix
     | UpdateConfig ConfigField String
     | SendSaveAgent
     | SendLoadAgent
+    | ReplayRun Run
 
 
 type alias WasmMessage =
@@ -109,76 +138,124 @@ decodeWasmMessage =
         )
 
 
-type EpisodeDoneKind
-    = EpisodeComplete String
-    | TrainingComplete String
-
-
-classifyEpisodeDone : String -> EpisodeDoneKind
-classifyEpisodeDone content =
-    if String.startsWith "Training complete" content then
-        TrainingComplete content
-
-    else
-        EpisodeComplete content
-
-
 applyWasmMessage : WasmMessage -> Model -> Model
 applyWasmMessage wasmMsg model =
-    let
-        withHistory =
-            { model | receivedMessages = model.receivedMessages ++ [ wasmMsg ] }
-    in
     case wasmMsg.msgType of
         "board" ->
-            { withHistory | board = parseBoard wasmMsg.content }
+            case parseBoard wasmMsg.content of
+                Just board ->
+                    { model
+                        | activeSession = Maybe.map (\s -> { s | batch = board :: s.batch }) model.activeSession
+                        , board =
+                            if model.replayingRun == Nothing then
+                                Just board
+
+                            else
+                                model.board
+                    }
+
+                Nothing ->
+                    model
+
+        "run_done" ->
+            handleRunDone wasmMsg.content model
 
         "log" ->
-            { withHistory | logs = model.logs ++ [ Log wasmMsg.content ] }
+            { model | logs = Log wasmMsg.content :: model.logs }
 
         "error" ->
-            { withHistory | logs = model.logs ++ [ Error wasmMsg.content ] }
-
-        "batch_done" ->
-            case classifyEpisodeDone wasmMsg.content of
-                EpisodeComplete msg ->
-                    { withHistory
-                        | logs = model.logs ++ [ Log msg ]
-                        , replayIndex = Just (List.length withHistory.receivedMessages - 1)
-                    }
-
-                TrainingComplete msg ->
-                    -- Training is done: log it, flag training as stopped,
-                    -- set replay to the last frame, and clear the message buffer
-                    -- so the replay starts clean.
-                    { withHistory
-                        | logs = model.logs ++ [ Log msg ]
-                        , training = False
-                        , replayIndex = Just (List.length withHistory.receivedMessages - 1)
-                        , receivedMessages = []
-                    }
+            { model | logs = Error wasmMsg.content :: model.logs }
 
         "save_agent" ->
-            { withHistory | logs = model.logs ++ [ Log "new agent save" ] }
+            { model | logs = Log "new agent save" :: model.logs }
+
+        "qtable_size" ->
+            { model | qtableSize = wasmMsg.content |> String.trim |> String.toInt |> Maybe.withDefault 0 }
+
+        "push_config" ->
+            case decodeConfig wasmMsg.content of
+                Ok config ->
+                    { model | config = config }
+
+                Err err ->
+                    { model | logs = Error ("Failed to decode config: " ++ Decode.errorToString err) :: model.logs }
 
         _ ->
-            { withHistory | logs = model.logs ++ [ Error ("unknown message type: " ++ wasmMsg.msgType) ] }
+            { model | logs = Error ("unknown message type: " ++ wasmMsg.msgType) :: model.logs }
+
+
+handleRunDone : String -> Model -> Model
+handleRunDone rawMessage model =
+    let
+        batch =
+            model.activeSession |> Maybe.map .batch |> Maybe.withDefault []
+
+        framesArray =
+            Array.fromList (List.reverse batch)
+
+        ( newLogEntry, maybeRun ) =
+            if Array.isEmpty framesArray then
+                ( Log rawMessage, Nothing )
+
+            else
+                let
+                    run =
+                        { id = model.nextRunId
+                        , message = rawMessage
+                        , frames = framesArray
+                        , playbackIndex = 0
+                        }
+                in
+                if String.contains "GameOver" rawMessage then
+                    ( RunLog run, Nothing )
+
+                else
+                    ( RunLog run, Just run )
+
+        ( nextRunId, nextBoard ) =
+            case maybeRun of
+                Just run ->
+                    ( model.nextRunId + 1, Array.get 0 run.frames )
+
+                Nothing ->
+                    ( model.nextRunId, model.board )
+
+        continueTraining =
+            String.contains "Episode" rawMessage
+
+        -- When a trainng session is done, the string containes Traing Complete
+        -- When an AI game is done, it's AI
+        -- Continuous training keeps the active session alive
+        nextSession =
+            case model.activeSession of
+                Just { mode } ->
+                    if mode == Training && continueTraining then
+                        Just { mode = Training, batch = [] }
+
+                    else
+                        Nothing
+
+                Nothing ->
+                    Nothing
+    in
+    { model
+        | logs = newLogEntry :: model.logs
+        , activeSession = nextSession
+        , replayingRun = maybeRun
+        , board = nextBoard
+        , nextRunId = nextRunId
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SendStep value ->
-            let
-                payload =
-                    Encode.object
-                        [ ( "type", Encode.string "STEP" )
-                        , ( "value", Encode.string value )
-                        ]
-            in
-            ( model, sendToJs payload )
+            ( model
+            , sendToJs (Encode.object [ ( "type", Encode.string "STEP" ), ( "value", Encode.string value ) ])
+            )
 
-        SendManual ->
+        StartManual ->
             let
                 payload =
                     Encode.object
@@ -191,30 +268,27 @@ update msg model =
                           )
                         ]
             in
-            ( { model | logs = [ Log "Sent manual command to WASM" ], receivedMessages = [] }, sendToJs payload )
+            ( { model | activeSession = Just { mode = Manual, batch = [] }, replayingRun = Nothing }
+            , sendToJs payload
+            )
 
-        SendTrain object ->
-            let
-                payload =
-                    Encode.object
-                        [ ( "type", Encode.string "TRAIN" )
-                        , ( "value", object )
-                        ]
-            in
-            ( { model | logs = [ Log "Sent train command to WASM" ], receivedMessages = [], training = True }, sendToJs payload )
+        StartAI ->
+            ( { model | activeSession = Just { mode = AI, batch = [] }, replayingRun = Nothing, logs = Log "Sent AI play command to WASM" :: model.logs }
+            , sendToJs (Encode.object [ ( "type", Encode.string "AI" ), ( "value", Encode.string "start AI play" ) ])
+            )
+
+        StartTrain ->
+            ( { model | activeSession = Just { mode = Training, batch = [] }, nextRunId = 0, replayingRun = Nothing, logs = [ Log "Sent train command to WASM" ] }
+            , sendToJs (Encode.object [ ( "type", Encode.string "TRAIN" ), ( "value", encodeConfig model.config ) ])
+            )
+
+        SendTrainMore ->
+            ( { model | activeSession = Just { mode = Training, batch = [] }, replayingRun = Nothing, logs = Log "Sent train more command to WASM" :: model.logs }
+            , sendToJs (Encode.object [ ( "type", Encode.string "RESUME_TRAIN" ), ( "value", encodeConfig model.config ) ])
+            )
 
         SendStopTrain ->
-            ( { model | logs = model.logs ++ [ Log "Sent stop training command to WASM" ], receivedMessages = [], training = False }, Cmd.none )
-
-        SendAI ->
-            let
-                payload =
-                    Encode.object
-                        [ ( "type", Encode.string "AI" )
-                        , ( "value", Encode.string "start AI play" )
-                        ]
-            in
-            ( { model | logs = [ Log "Sent AI play command to WASM" ], receivedMessages = [] }, sendToJs payload )
+            ( { model | activeSession = Nothing, replayingRun = Nothing }, Cmd.none )
 
         GotWasmMessage value ->
             case decodeWasmMessage value of
@@ -222,87 +296,52 @@ update msg model =
                     ( applyWasmMessage wasmMsg model, Cmd.none )
 
                 Err _ ->
-                    ( { model | logs = model.logs ++ [ Error "Failed to decode WASM message" ] }
-                    , Cmd.none
-                    )
+                    ( { model | logs = Error "Failed to decode WASM message" :: model.logs }, Cmd.none )
 
         UpdateConfig field str ->
             ( { model | config = updateConfig field str model.config }, Cmd.none )
 
         SendSaveAgent ->
-            let
-                payload =
-                    Encode.object
-                        [ ( "type", Encode.string "SAVE_AGENT" )
-                        , ( "value", Encode.string "save agent state" )
-                        ]
-            in
-            ( { model | logs = [ Log "Sent AgentSave command to WASM" ] }, sendToJs payload )
+            ( { model | logs = [ Log "Sent AgentSave command to WASM" ] }
+            , sendToJs (Encode.object [ ( "type", Encode.string "SAVE_AGENT" ), ( "value", Encode.string "save agent state" ) ])
+            )
 
         SendLoadAgent ->
-            let
-                payload =
-                    Encode.object
-                        [ ( "type", Encode.string "LOAD_AGENT" )
-                        , ( "value", Encode.string "load agent state" )
-                        ]
-            in
-            ( { model | logs = [ Log "Sent AgentSave command to WASM" ] }, sendToJs payload )
+            ( { model | logs = [ Log "Sent AgentLoad command to WASM" ] }
+            , sendToJs (Encode.object [ ( "type", Encode.string "LOAD_AGENT" ), ( "value", Encode.string "load agent state" ) ])
+            )
 
-        StartReplay ->
-            case model.replayIndex of
-                Just _ ->
-                    -- Replay already in progress
-                    ( model, Cmd.none )
-
-                Nothing ->
-                    let
-                        lastIndex =
-                            List.length model.receivedMessages - 1
-                    in
-                    ( { model
-                        | replayIndex = Just lastIndex
-                        , logs = model.logs ++ [ Log "Starting replay.." ]
-                      }
-                    , Cmd.none
-                    )
+        ReplayRun run ->
+            ( { model | board = Array.get 0 run.frames, replayingRun = Just { run | playbackIndex = 0 } }, Cmd.none )
 
         ReplayTick _ ->
-            case model.replayIndex of
+            case model.replayingRun of
+                Just run ->
+                    let
+                        nextIndex =
+                            run.playbackIndex + 1
+                    in
+                    if nextIndex >= Array.length run.frames then
+                        let
+                            cmd =
+                                case model.activeSession of
+                                    Just { mode } ->
+                                        if mode == Training then
+                                            sendToJs (Encode.object [ ( "type", Encode.string "RESUME_TRAIN" ), ( "value", Encode.string "continue" ) ])
+
+                                        else
+                                            Cmd.none
+
+                                    Nothing ->
+                                        Cmd.none
+                        in
+                        ( { model | replayingRun = Nothing }, cmd )
+
+                    else
+                        ( { model | board = Array.get nextIndex run.frames, replayingRun = Just { run | playbackIndex = nextIndex } }, Cmd.none )
+
                 Nothing ->
                     ( model, Cmd.none )
-
-                Just idx ->
-                    let
-                        -- receivedMessages is oldest-first; we replay from idx down to 0
-                        currentMsg =
-                            model.receivedMessages
-                                |> List.reverse
-                                |> List.drop idx
-                                |> List.head
-                    in
-                    case currentMsg of
-                        Nothing ->
-                            ( { model | replayIndex = Nothing }, Cmd.none )
-
-                        Just wasmMsg ->
-                            let
-                                ( updatedModel, nextIndex, cmd ) =
-                                    if idx <= 0 then
-                                        ( applyWasmMessage wasmMsg { model | receivedMessages = [] }
-                                        , Nothing
-                                        , sendToJs
-                                            (Encode.object
-                                                [ ( "type", Encode.string "RESUME_TRAIN" )
-                                                , ( "value", Encode.string "continue" )
-                                                ]
-                                            )
-                                        )
-
-                                    else
-                                        ( applyWasmMessage wasmMsg model, Just (idx - 1), Cmd.none )
-                            in
-                            ( { updatedModel | replayIndex = nextIndex }, cmd )
 
 
 
@@ -316,13 +355,21 @@ view model =
             [ h3 [] [ text "Game Board" ]
             , viewBoard model.board
             , viewControls
+            , viewStatusDetails model
             ]
         , div [ class "info-section" ]
-            [ viewLogs model.logs ]
+            [ viewLogs model.replayingRun model.logs ]
         , div [ class "input-section" ]
             [ viewAppControl model
             , viewConfig model.config UpdateConfig
             ]
+        ]
+
+
+viewStatusDetails : Model -> Html Msg
+viewStatusDetails model =
+    div [ class "status-details" ]
+        [ div [] [ text ("Qtable size: " ++ String.fromInt model.qtableSize) ]
         ]
 
 
@@ -338,21 +385,38 @@ viewControls =
 
 viewAppControl : Model -> Html Msg
 viewAppControl model =
+    let
+        isTraining =
+            case model.activeSession of
+                Just { mode } ->
+                    mode == Training
+
+                Nothing ->
+                    False
+    in
     div [ class "control-buttons", preventDefaultOn "keydown" arrowKeyDecoder ]
-        [ button [ onClick SendManual ] [ text "Manual play" ]
-        , button [ onClick SendAI ] [ text "AI play" ]
-        , if model.training then
+        [ button [ onClick StartManual ] [ text "Manual play" ]
+        , button [ onClick StartAI ] [ text "AI play" ]
+        , if isTraining then
             button [ onClick SendStopTrain ] [ text "Stop Training" ]
 
+          else if model.qtableSize /= 0 then
+            button [ onClick SendTrainMore ] [ text "Train More" ]
+
           else
-            button [ onClick (SendTrain (encodeConfig model.config)) ] [ text "Train" ]
+            button [ onClick StartTrain ] [ text "Train" ]
+        , if not isTraining && model.qtableSize /= 0 then
+            button [ onClick StartTrain ] [ text "Train Fresh" ]
+
+          else
+            text ""
         , button [ onClick SendLoadAgent ] [ text "Load model" ]
         , button [ onClick SendSaveAgent ] [ text "Save model" ]
         ]
 
 
-viewLogs : List LogType -> Html Msg
-viewLogs logs =
+viewLogs : Maybe Run -> List LogType -> Html Msg
+viewLogs replayingRun logs =
     div [ class "logs-container" ]
         [ h3 [] [ text "Logs" ]
         , div [ class "logs" ]
@@ -360,19 +424,42 @@ viewLogs logs =
                 [ text "No logs yet" ]
 
              else
-                List.map viewLog (List.reverse logs)
+                List.map (viewLog replayingRun) logs
             )
         ]
 
 
-viewLog : LogType -> Html Msg
-viewLog entry =
+viewLog : Maybe Run -> LogType -> Html Msg
+viewLog replayingRun entry =
     case entry of
         Log message ->
             div [ class "log-entry" ] [ text message ]
 
         Error message ->
             div [ class "error-entry" ] [ text message ]
+
+        RunLog run ->
+            let
+                isCurrentlyReplaying =
+                    case replayingRun of
+                        Just activeRun ->
+                            activeRun.id == run.id
+
+                        Nothing ->
+                            False
+
+                activeClass =
+                    if isCurrentlyReplaying then
+                        " active-replay"
+
+                    else
+                        " active-replay__finished"
+            in
+            button
+                [ class ("log-entry run-log-entry" ++ activeClass)
+                , onClick (ReplayRun run)
+                ]
+                [ text ("▶ [Run #" ++ String.fromInt run.id ++ "] " ++ run.message) ]
 
 
 keyToDirection : String -> Maybe String
@@ -416,7 +503,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ receiveFromJs GotWasmMessage
-        , case model.replayIndex of
+        , case model.replayingRun of
             Just _ ->
                 Time.every (toFloat (getField model.config.frameTimeMs)) ReplayTick
 

@@ -3,6 +3,7 @@ module App.Config exposing (..)
 import Html exposing (Html, div, h3, input, label, option, select, span, text)
 import Html.Attributes exposing (attribute, class, selected, step, type_, value)
 import Html.Events exposing (onInput)
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 
 
@@ -265,7 +266,7 @@ updateConfig field str config =
 
 
 
--- ENCODE
+-- ENCODE / DEcODE
 
 
 encodeConfig : Config -> Encode.Value
@@ -288,3 +289,54 @@ encodeConfig config =
         , ( "reward_death", Encode.float (getField config.rewardDeath) )
         , ( "statefn", Encode.string (stateToString config.stateFn) )
         ]
+
+
+required : String -> Decoder a -> Decoder (a -> b) -> Decoder b
+required fieldName decoder decoderFunc =
+    Decode.map2
+        (\func value -> func value)
+        decoderFunc
+        (Decode.field fieldName decoder)
+
+
+optional : String -> Decoder a -> a -> Decoder (a -> b) -> Decoder b
+optional fieldName decoder defaultValue decoderFunc =
+    Decode.map2
+        (\func value -> func value)
+        decoderFunc
+        (Decode.oneOf
+            [ Decode.field fieldName decoder
+            , Decode.succeed defaultValue
+            ]
+        )
+
+
+hardcoded : a -> Decoder a
+hardcoded =
+    Decode.succeed
+
+
+configDecoder : Decoder Config
+configDecoder =
+    Decode.succeed Config
+        |> required "EPISODES" (Decode.int |> Decode.map fieldInt)
+        |> required "SAMPLE_PER_REPLAY" (Decode.int |> Decode.map fieldInt)
+        |> required "MAX_STEPS" (Decode.int |> Decode.map fieldInt)
+        |> required "frame_time_ms" (Decode.int |> Decode.map fieldInt)
+        |> required "board_x" (Decode.int |> Decode.map fieldInt)
+        |> required "board_y" (Decode.int |> Decode.map fieldInt)
+        |> required "alpha" (Decode.float |> Decode.map fieldFloat)
+        |> required "gamma" (Decode.float |> Decode.map fieldFloat)
+        |> required "epsilon" (Decode.float |> Decode.map fieldFloat)
+        |> required "epsilon_decay" (Decode.float |> Decode.map fieldFloat)
+        |> required "epsilon_min" (Decode.float |> Decode.map fieldFloat)
+        |> required "reward_advance" (Decode.float |> Decode.map fieldFloat)
+        |> required "reward_green" (Decode.float |> Decode.map fieldFloat)
+        |> required "reward_red" (Decode.float |> Decode.map fieldFloat)
+        |> required "reward_death" (Decode.float |> Decode.map fieldFloat)
+        |> required "statefn" (Decode.string |> Decode.map stringToState)
+
+
+decodeConfig : String -> Result Decode.Error Config
+decodeConfig =
+    Decode.decodeString configDecoder

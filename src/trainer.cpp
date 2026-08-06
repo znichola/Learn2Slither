@@ -24,6 +24,23 @@ Trainer::Trainer(const Config &config)
         Pipe::RandomSpawn{Board::Cell::Green},
         }) {}
 
+void Trainer::updateConfig(const Config &config) {
+    const auto oldStateFn = this->config.stateFn;
+    _current_ep = 0;
+    this->config = config;
+    if (oldStateFn != this->config.stateFn) {
+        Logger::error() << "Refusing to change state function on existing agent";
+        this->config.stateFn = oldStateFn;
+    }
+    this->pipe = Pipe(Board(config.board_x, config.board_y), {
+        Pipe::RandomSpawn{Board::Cell::Head},
+        Pipe::RandomConnectedSpawn{Board::Cell::Head, Board::Cell::Snake, 2},
+        Pipe::RandomSpawn{Board::Cell::Red},
+        Pipe::RandomSpawn{Board::Cell::Green},
+        Pipe::RandomSpawn{Board::Cell::Green},
+        });
+}
+
 void Trainer::AIplay() {
     Board board = pipe.genBoard(agent.rng());
 
@@ -43,7 +60,7 @@ void Trainer::AIplay() {
 
         Logger::board() << board;
     }
-    Logger::log() << "Game finished after "
+    Logger::RUN_DONE() << "AI"
                 << " Steps " << step
                 << " Length " << board._snake.size()
                 << " qtable " << agent.q_table.size()
@@ -77,11 +94,11 @@ void Trainer::trainEpisode(bool log) {
         if (log) Logger::board() << board;
     }
     if (log) {
-        Logger::board() << board;
-        Logger::batch_done() << "Episode " 
+        Logger::QTABLE_SIZE(agent.q_table.size());
+        Logger::RUN_DONE() << "Episode " 
                     << _current_ep << "/" << config.EPISODES
                     << " Steps " << step
-                    << " Length " << board._snake.size()
+                    << " Length " << board.snakeLength()
                     << " qtable " << agent.q_table.size()
                     ;
     }
@@ -89,7 +106,7 @@ void Trainer::trainEpisode(bool log) {
 
 void Trainer::train() {
     if (_current_ep >= config.EPISODES) {
-        Logger::log() << "Training complete: " << _current_ep
+        Logger::RUN_DONE() << "Training complete " << _current_ep
             << "/" << config.EPISODES << " episodes trained.";
         return;
     }

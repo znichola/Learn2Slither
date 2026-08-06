@@ -63,9 +63,12 @@ static void handle(const Reader::Train& m, AppState& state) {
 }
 
 static void handle(const Reader::ResumeTrain& m, AppState& state) {
-    (void)m;
+    if (m.content != "\"continue\"") {
+        Trainer::Config config = parseConfig(m.content);
+        state.trainer.updateConfig(config);
+    }
+
     state.trainer.train();
-    // TODO this feels bugged as all heck. Should be looked at
 }
 
 static void handle(const Reader::AI& m, AppState& state) {
@@ -118,8 +121,11 @@ static void handle(const Reader::Step& m, AppState& state) {
         state.state = AppState::GS::GameOver;
     }
 
-    Logger::log() << "Move command " << m.content << ", result " << state.board.moveRes;
+    // Logger::log() << "Move command " << m.content << ", result " << state.board.moveRes;
     Logger::board() << state.board;
+    if (state.state == AppState::GS::GameOver) {
+        Logger::RUN_DONE() << "GameOver | length " << state.board.snakeLength();
+    }
 }
 
 static void handle(const Reader::SaveAgent& m, AppState& state) {
@@ -155,10 +161,11 @@ static void handle(const Reader::LoadAgent& m, AppState& state) {
     state.trainer.agent.parseQTable(agentQtable);
 
     Logger::log() << "Loaded " << agentName
-                  << "| State representation: " << State::serialise(state.trainer.config.stateFn)
-                  << "| Q-table entries: " << state.trainer.agent.q_table.size();
+                  << " | State representation: " << State::serialise(state.trainer.config.stateFn)
+                  << " | Q-table entries: " << state.trainer.agent.q_table.size();
 
-    // TODO send the update config message for the UI
+    Logger::QTABLE_SIZE(state.trainer.agent.q_table.size());
+    Logger::PUSH_CONFIG() << serialiseConfig(state.trainer.config);
 }
 
 AppState initState() {
