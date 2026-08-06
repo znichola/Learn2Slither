@@ -17,9 +17,9 @@ The reinforment learning algo is implemented in C++, which is then compiled to w
 
 - [ ] `light-dark` is not supported on my phone :(
 - [ ] actually make it do the thing
--  -  [ ] log the new state encounted in a batch
+-  -  [ ] log the new state encounted in a run
 -  -  [ ] refactor agent view compression, maybe remove it
-- [ ] rename episode_done to batch_done
+- [ ] rename episode_done to RUN_DONE
 
 ## Training params and RL
 
@@ -51,7 +51,7 @@ Random exploration vs exploitation, how likely the model is to pick at random ca
 ```
 -Kind of ok training with the single tile state reprisentation
 Episodes 5000
-Batch Size 100
+Run Size 100
 Max Steps 500
 Frame Time (ms) 100
 Board X 10

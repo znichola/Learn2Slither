@@ -15,7 +15,7 @@
 
     <button id="theme-toggle" class="theme-toggle">Theme: System</button>
 
-    <div class="title-group"><h1>Snake Dojo</h1><commit><a href=https://github.com/znichola/Learn2Slither/commit/7948646>#<span>7948646</span></a></commit><date>2026-08-05 11:41:14 UTC</date></div>
+    <div class="title-group"><h1>Snake Dojo</h1><commit><a href=https://github.com/znichola/Learn2Slither/commit/660c6ea>#<span>660c6ea</span></a></commit><date>2026-08-06 15:02:42 UTC</date></div>
 
 
     <div id="elm-node"></div>
@@ -96,7 +96,7 @@
         }
 
         // Create parser instance
-        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "BATCH_DONE", "SAVE_AGENT"]);
+        const parser = new WasmOutputParser(['BOARD', 'LOG', 'ERROR', "RUN_DONE", "SAVE_AGENT", "QTABLE_SIZE", "PUSH_CONFIG"]);
 
         // Handle parsed messages - send to both terminal and Elm
         parser.onMessage = (message) => {
