@@ -8,6 +8,7 @@
 #include "reader.hpp"
 #include "trainer.hpp"
 #include "configParser.hpp"
+#include "agentIO.hpp"
 
 struct AppState {
     enum class GS { Playing, GameOver };
@@ -135,33 +136,53 @@ static void handle(const Reader::Step& m, AppState& state) {
 }
 
 static void handle(const Reader::SaveAgent& m, AppState& state) {
-    (void)m;
-    Logger::log() << "Saving and sending agent state ...";
-
     Logger::log() << "Saved AGENT_" << state.trainer.agent.rng()
                   << " | State representation: " << State::serialise(state.trainer.config.stateFn)
                   << " | Q-table entries: " << state.trainer.agent.q_table.size();
 
-    Logger::save_agent() << "AGENT_" << state.trainer.agent.rng() << "\n\n"
-            << "CONFIG\n" << serialiseConfig(state.trainer.config) << "\n\n"
-            << "QTABLE\n" << state.trainer.agent.serialiseQTable();
+    std::stringstream ss;
+    ss << "AGENT_" << state.trainer.agent.rng() << "\n\n"
+        << "CONFIG\n" << serialiseConfig(state.trainer.config) << "\n\n"
+        << "QTABLE\n" << state.trainer.agent.serialiseQTable();
+
+#ifndef __EMSCRIPTEN__
+    if (!AgentIO::save(m.content, ss.str())) {
+        Logger::error() << "Save error: could not open file for writing: " << m.content;
+    } else {
+        Logger::log() << "Save learning state in " << m.content;
+    }
+#else
+    (void)m;
+    Logger::save_agent() << ss.str();
+#endif
 }
 
 static void handle(const Reader::LoadAgent& m, AppState& state) {
-    (void)state;
+#ifndef __EMSCRIPTEN__
+    auto c = AgentIO::load(m.content);
+    if (!c.has_value()) {
+        Logger::error() << "Load error: could not open file: " << m.content;
+        return;
+    }
+    std::string content = c.value();
+    Logger::log() << "Load trained model from " << m.content;
+#else
     Logger::log() << "Loading agent ...";
-    auto agentPos = m.content.find("AGENT_");
-    auto configPos = m.content.find("CONFIG\n");
-    auto qtablePos = m.content.find("QTABLE\n");
+    std::string content = m.content;
+#endif
+
+    const auto agentPos = content.find("AGENT_");
+    const auto configPos = content.find("CONFIG\n");
+    const auto qtablePos = content.find("QTABLE\n");
 
     if (agentPos == std::string::npos || agentPos > configPos || agentPos > qtablePos) {
         Logger::error() << "Load error: missing sections, agent:" << agentPos << " config:" << configPos << " qtable:" << qtablePos;
         return;
     }
 
-    const std::string agentName = m.content.substr(agentPos, configPos - agentPos);
-    const std::string agentConfig = m.content.substr(configPos + 7, qtablePos - (configPos + 7));
-    const std::string agentQtable = m.content.substr(qtablePos + 7);
+    const std::string agentName = content.substr(agentPos, configPos - agentPos);
+    const std::string agentConfig = content.substr(configPos + 7, qtablePos - (configPos + 7));
+    const std::string agentQtable = content.substr(qtablePos + 7);
 
     state.trainer.config = parseConfig(agentConfig);
     state.trainer.agent.parseQTable(agentQtable);

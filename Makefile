@@ -20,7 +20,7 @@ endif
 LEAKS_CHECK = valgrind
 EXAMPLE_FILE = example_file.txt
 
-FILES = environment interpreter agent trainer bridge configParser
+FILES = environment interpreter agent trainer bridge configParser agentIO
 
 MAIN_SRC = src/main.cpp
 MAIN_OBJ = obj/main.o
