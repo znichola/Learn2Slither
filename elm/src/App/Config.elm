@@ -28,6 +28,7 @@ type ConfigField
     | RewardRed
     | RewardDeath
     | StateFn
+    | StateInit
 
 
 type alias Config =
@@ -47,6 +48,7 @@ type alias Config =
     , rewardRed : Field Float
     , rewardDeath : Field Float
     , stateFn : StateType
+    , stateInit : StateInitType
     }
 
 
@@ -64,6 +66,11 @@ type StateType
     | FirstAndNextNonEmpty
     | SingleDimensionFANNE
     | SingleDimensionFULL
+
+
+type StateInitType
+    = Zeros
+    | InstantDeath
 
 
 
@@ -100,8 +107,12 @@ getField field =
     Maybe.withDefault field.default field.parsed
 
 
-stateToString : StateType -> String
-stateToString s =
+
+-- ENUM CONVERTERS
+
+
+stateTypeToString : StateType -> String
+stateTypeToString s =
     case s of
         Full ->
             "FULL"
@@ -119,8 +130,8 @@ stateToString s =
             "SINGLE_DIMENSION_FULL"
 
 
-stringToState : String -> StateType
-stringToState str =
+stringToStateType : String -> StateType
+stringToStateType str =
     case str of
         "FULL" ->
             Full
@@ -139,6 +150,29 @@ stringToState str =
 
         _ ->
             Full
+
+
+stateInitToString : StateInitType -> String
+stateInitToString s =
+    case s of
+        Zeros ->
+            "ZEROS"
+
+        InstantDeath ->
+            "INSTANT_DEATH"
+
+
+stringToStateInit : String -> StateInitType
+stringToStateInit str =
+    case str of
+        "ZEROS" ->
+            Zeros
+
+        "INSTANT_DEATH" ->
+            InstantDeath
+
+        _ ->
+            Zeros
 
 
 
@@ -174,24 +208,22 @@ viewFloatField labelText field f toMsg =
 viewEnumField :
     String
     -> ConfigField
-    -> StateType
+    -> List a
+    -> (a -> String)
+    -> a
     -> (ConfigField -> String -> msg)
     -> Html msg
-viewEnumField labelText field current toMsg =
-    let
-        options =
-            [ Full, FirstNonEmpty, FirstAndNextNonEmpty, SingleDimensionFANNE, SingleDimensionFULL ]
-    in
+viewEnumField labelText field options toString current toMsg =
     span [ class "config-field" ]
         [ label [] [ text labelText ]
         , select [ onInput (toMsg field) ]
             (List.map
                 (\opt ->
                     option
-                        [ value (stateToString opt)
+                        [ value (toString opt)
                         , selected (opt == current)
                         ]
-                        [ text (stateToString opt) ]
+                        [ text (toString opt) ]
                 )
                 options
             )
@@ -205,11 +237,22 @@ viewConfig config toMsg =
         , div [ class "config-grid" ]
             [ viewIntField "Episodes" Episodes config.episodes toMsg
             , viewIntField "Sample per Replay" SamplePerReplay config.samplePerReplay toMsg
-            , viewIntField "Max Steps" MaxSteps config.maxSteps toMsg
-            , viewIntField "Frame Time (ms)" FrameTime config.frameTimeMs toMsg
             , viewIntField "Board X" BoardX config.boardX toMsg
             , viewIntField "Board Y" BoardY config.boardY toMsg
             , viewFloatField "Alpha" Alpha config.alpha toMsg
+            , viewIntField "Max Steps" MaxSteps config.maxSteps toMsg
+            , viewEnumField "State Representation"
+                StateFn
+                [ Full, FirstNonEmpty, FirstAndNextNonEmpty, SingleDimensionFANNE, SingleDimensionFULL ]
+                stateTypeToString
+                config.stateFn
+                toMsg
+            , viewEnumField "State Init"
+                StateInit
+                [ Zeros, InstantDeath ]
+                stateInitToString
+                config.stateInit
+                toMsg
             , viewFloatField "Gamma" Gamma config.gamma toMsg
             , viewFloatField "Epsilon" Epsilon config.epsilon toMsg
             , viewFloatField "Epsilon Decay" EpsilonDecay config.epsilonDecay toMsg
@@ -218,7 +261,6 @@ viewConfig config toMsg =
             , viewFloatField "Reward Green" RewardGreen config.rewardGreen toMsg
             , viewFloatField "Reward Red" RewardRed config.rewardRed toMsg
             , viewFloatField "Reward Death" RewardDeath config.rewardDeath toMsg
-            , viewEnumField "State Representation" StateFn config.stateFn toMsg
             ]
         ]
 
@@ -276,11 +318,14 @@ updateConfig field str config =
             { config | rewardDeath = updateFieldFloat str config.rewardDeath }
 
         StateFn ->
-            { config | stateFn = stringToState str }
+            { config | stateFn = stringToStateType str }
+
+        StateInit ->
+            { config | stateInit = stringToStateInit str }
 
 
 
--- ENCODE / DEcODE
+-- ENCODE / DECODE
 
 
 encodeConfig : Config -> Encode.Value
@@ -301,7 +346,8 @@ encodeConfig config =
         , ( "reward_green", Encode.float (getField config.rewardGreen) )
         , ( "reward_red", Encode.float (getField config.rewardRed) )
         , ( "reward_death", Encode.float (getField config.rewardDeath) )
-        , ( "statefn", Encode.string (stateToString config.stateFn) )
+        , ( "statefn", Encode.string (stateTypeToString config.stateFn) )
+        , ( "state_init", Encode.string (stateInitToString config.stateInit) )
         ]
 
 
@@ -348,7 +394,8 @@ configDecoder =
         |> required "reward_green" (Decode.float |> Decode.map fieldFloat)
         |> required "reward_red" (Decode.float |> Decode.map fieldFloat)
         |> required "reward_death" (Decode.float |> Decode.map fieldFloat)
-        |> required "statefn" (Decode.string |> Decode.map stringToState)
+        |> required "statefn" (Decode.string |> Decode.map stringToStateType)
+        |> required "state_init" (Decode.string |> Decode.map stringToStateInit)
 
 
 decodeConfig : String -> Result Decode.Error Config

@@ -39,11 +39,21 @@ AppState initState();
 int main() {
 
     AppState state = initState();
-    
+
     Reader::Parser parser;
 
     const auto drain = [&]() {
-        while (auto msg = parser.pop()) dispatch(*msg, state);
+        while (auto msg = parser.pop()) {
+            try {
+                dispatch(*msg, state);
+            } catch (const std::exception& e) {
+                Logger::error() << "Error, re-initilising app sate, message : " << e.what();
+                state = initState();
+            } catch (...) {
+                Logger::error() << "Error, re-initilising app sate";
+                state = initState();
+            }
+        }
     };
 
     while (parser.read()) drain();
@@ -137,6 +147,7 @@ static void handle(const Reader::Step& m, AppState& state) {
 static void handle(const Reader::SaveAgent& m, AppState& state) {
     Logger::log() << "Saved AGENT_" << state.trainer.agent.rng()
                   << " | State representation: " << State::serialise(state.trainer.config.stateFn)
+                  << " | State init: " << State::serialise(state.trainer.config.stateInit)
                   << " | Q-table entries: " << state.trainer.agent.q_table.size();
 
     std::stringstream ss;
@@ -184,11 +195,16 @@ static void handle(const Reader::LoadAgent& m, AppState& state) {
     const std::string agentQtable = content.substr(qtablePos + 7);
 
     state.trainer.config = parseConfig(agentConfig);
+    
+    state.trainer.agent.stateInit = state.trainer.config.stateInit;
+    state.trainer.agent.reward_death = state.trainer.config.reward_death;
+
     state.trainer.agent.parseQTable(agentQtable);
     state.trainer.agent.epsilon = state.trainer.config.epsilon_min;
 
     Logger::log() << "Loaded " << agentName
                   << " | State representation: " << State::serialise(state.trainer.config.stateFn)
+                  << " | State init: " << State::serialise(state.trainer.config.stateInit)
                   << " | Q-table entries: " << state.trainer.agent.q_table.size();
 
     Logger::QTABLE_SIZE(state.trainer.agent.q_table.size());

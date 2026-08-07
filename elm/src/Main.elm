@@ -89,6 +89,7 @@ defaultConfig =
     , rewardRed = fieldFloat -2.0
     , rewardDeath = fieldFloat -10.0
     , stateFn = Full
+    , stateInit = Zeros
     }
 
 
@@ -217,8 +218,9 @@ applyWasmMessage wasmMsg model =
 
         "push_config" ->
             case decodeConfig wasmMsg.content of
+                -- TODO ensure it's only on agent load that we push config
                 Ok config ->
-                    { model | config = config }
+                    { model | config = config, activeSession = Just { mode = Training, batch = [] } }
 
                 Err err ->
                     { model | logs = Error ("Failed to decode config: " ++ Decode.errorToString err) :: model.logs }
@@ -401,9 +403,13 @@ view model =
     div [ class "container" ]
         [ div [ class "game-section", preventDefaultOn "keydown" arrowKeyDecoder ]
             [ h3 [] [ text "Game Board" ]
-            , viewBoard model.board
-            , viewControls
-            , viewStatusDetails model
+            , div [ class "inner-board" ]
+                [ div [ class "board-column" ]
+                    [ viewBoard model.board
+                    , viewControls
+                    ]
+                , viewBoardOptions model
+                ]
             ]
         , div [ class "info-section" ]
             [ viewLogs model.replayingRun model.logs ]
@@ -411,6 +417,16 @@ view model =
             [ viewAppControl model
             , viewConfig (withComputedHints model.config) UpdateConfig
             ]
+        ]
+
+
+viewBoardOptions : Model -> Html Msg
+viewBoardOptions model =
+    div [ class "board-options" ]
+        [ div [] [ text "Board Options" ]
+        , button [ class "option-btn", onClick ToggleSnakeVision ] [ text "Toggle snake vision" ]
+        , viewIntField "Frame Time (ms)" FrameTime model.config.frameTimeMs UpdateConfig
+        , div [ class "option-item qtable-stat" ] [ text ("Q-table size: " ++ String.fromInt model.qtableSize) ]
         ]
 
 

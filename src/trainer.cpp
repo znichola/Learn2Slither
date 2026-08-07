@@ -13,6 +13,8 @@ Trainer::Trainer(const Config &config)
         .epsilon = config.epsilon,
         .epsilon_decay = config.epsilon_decay,
         .epsilon_min = config.epsilon_min,
+        .reward_death = config.reward_death,
+        .stateInit = config.stateInit,
         .state = State::get(config.stateFn),
         .rayState = State::getRay(config.stateFn),
         .q_table = {}
@@ -29,10 +31,20 @@ void Trainer::updateConfig(const Config &config) {
     const auto oldStateFn = this->config.stateFn;
     _current_ep = 0;
     this->config = config;
+
     if (oldStateFn != this->config.stateFn) {
         Logger::error() << "Refusing to change state function on existing agent";
         this->config.stateFn = oldStateFn;
     }
+
+    agent.alpha         = this->config.alpha;
+    agent.gamma         = this->config.gamma;
+    agent.epsilon       = this->config.epsilon;
+    agent.epsilon_decay = this->config.epsilon_decay;
+    agent.epsilon_min   = this->config.epsilon_min;
+    agent.reward_death  = this->config.reward_death;
+    agent.stateInit     = this->config.stateInit;
+
     this->pipe = Pipe(Board(config.board_x, config.board_y), {
         Pipe::RandomSpawn{Board::Cell::Head},
         Pipe::RandomConnectedSpawn{Board::Cell::Head, Board::Cell::Snake, 2},
@@ -94,6 +106,7 @@ void Trainer::trainEpisode(bool log) {
         float _reward = reward(next_board.moveRes);
 
         if (next_board.moveRes == MoveRes::Death) {
+            if (log) Logger::log() << agent.logDecision(vision, action);
             agent.updateQtableOnDeath(vision, action, _reward);
             break;
         } else {

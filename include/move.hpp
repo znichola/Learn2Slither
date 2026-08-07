@@ -2,14 +2,14 @@
 
 #include <ostream>
 
-enum class Move {Up=0, Down=1, Left=2, Right=3};
+enum class Move {Up=0, Right=1, Down=2, Left=3};
 
 inline std::ostream& operator<<(std::ostream& os, const Move m) {
     switch (m) {
         case Move::Up:    os << "UP";    break;
+        case Move::Right: os << "RIGHT"; break;
         case Move::Down:  os << "DOWN";  break;
         case Move::Left:  os << "LEFT";  break;
-        case Move::Right: os << "RIGHT"; break;
     }
     return os;
 }
