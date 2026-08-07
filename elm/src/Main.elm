@@ -266,7 +266,7 @@ handleRunDone rawMessage model =
                     ( model.nextRunId, model.board )
 
         continueTraining =
-            String.contains "Episode" rawMessage
+            String.contains "Epoch summary" rawMessage
 
         -- When a trainng session is done, the string containes Traing Complete
         -- When an AI game is done, it's AI
