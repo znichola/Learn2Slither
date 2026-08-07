@@ -43,8 +43,9 @@ inline std::ostream& operator<<(std::ostream& os, const Vision &v) {
 
 namespace State {
     static char map(Board::Cell c) {
-    return Board::mapping[static_cast<size_t>(c)];
-}
+        return Board::mapping[static_cast<size_t>(c)];
+    }
+
     typedef std::function<std::string(const Vision&)> StateFn;
     typedef std::function<std::string(const std::vector<Board::Cell>&)> RayStateFn;
 
@@ -117,6 +118,7 @@ namespace State {
     }
 
     enum class Type { FULL, FIRST_NON_EMPTY, FIRST_AND_NEXT_NON_EMPTY, SINGLE_DIMENSION_FANNE, SINGLE_DIMENSION_FULL };
+    enum class Init { ZEROS, INSTANT_DEATH };
 
     inline std::string serialise(Type t) {
         switch (t) {
@@ -129,8 +131,15 @@ namespace State {
         }
     }
 
+    inline std::string serialise(Init i) {
+        switch (i) {
+            case Init::ZEROS: return "ZEROS";
+            case Init::INSTANT_DEATH: return "INSTANT_DEATH";
+            default: return "UNKNOWN";
+        }
+    }
+
     inline Type parse(const std::string& s) {
-        std::cout << "PARSING " << s << "\n";
         if (s == "FULL") return Type::FULL;
         if (s == "FIRST_NON_EMPTY") return Type::FIRST_NON_EMPTY;
         if (s == "FIRST_AND_NEXT_NON_EMPTY") return Type::FIRST_AND_NEXT_NON_EMPTY;
@@ -140,13 +149,21 @@ namespace State {
         throw std::invalid_argument("Invalid State::Type string: " + s);
     }
 
+    inline Init parseInit(const std::string& s) {
+        std::cout << "PARSING INIT " << s << "\n";
+        if (s == "ZEROS") return Init::ZEROS;
+        if (s == "INSTANT_DEATH") return Init::INSTANT_DEATH;
+
+        throw std::invalid_argument("Invalid State::Init string: " + s);
+    }
+
     inline StateFn get(Type t) {
         switch (t) {
             case Type::FULL: return full;
             case Type::FIRST_NON_EMPTY: return firstNonEmpty;
             case Type::FIRST_AND_NEXT_NON_EMPTY: return firstAndNextNonEmpty;
-            case Type::SINGLE_DIMENSION_FANNE: return firstAndNextNonEmpty; // invalid as it's superceded by getRay
-            case Type::SINGLE_DIMENSION_FULL: return full; // invalid as it's superceded by getRay
+            case Type::SINGLE_DIMENSION_FANNE: return firstAndNextNonEmpty; // invalid as it's superseded by getRay
+            case Type::SINGLE_DIMENSION_FULL: return full; // invalid as it's superseded by getRay
         }
         throw std::runtime_error("Invalid STATE representation");
     }
@@ -158,8 +175,6 @@ namespace State {
             default: return nullptr;
         }
     }
-
-
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Board& b) {

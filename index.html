@@ -15,7 +15,7 @@
 
     <button id="theme-toggle" class="theme-toggle">Theme: System</button>
 
-    <div class="title-group"><h1>Snake Dojo</h1><commit><a href=https://github.com/znichola/Learn2Slither/commit/d792265>#<span>d792265</span></a></commit><date>2026-08-07 09:45:47 UTC</date></div>
+    <div class="title-group"><h1>Snake Dojo</h1><commit><a href=https://github.com/znichola/Learn2Slither/commit/87b0d58>#<span>87b0d58</span></a></commit><date>2026-08-07 15:34:11 UTC</date></div>
 
 
     <div id="elm-node"></div>
@@ -132,7 +132,7 @@
         // WASM STUFF
         import createModule from "./snake.js";
 
-        // Called by Elm port handler above — pushes chars into the queue
+        // Called by Elm port handler above - pushes chars into the queue
         // and wakes up WASM if it is suspended waiting for input.
         window.enqueueInput = (str) => {
             console.log("called with data to send to the  c++ stdin:", str)
@@ -159,13 +159,6 @@
 
         // Resolve function stored here while WASM is suspended
         let _wasmResume = null;
-
-        // // Called by WASM via Asyncify — returns a Promise, which Asyncify awaits
-        // Module['js_wait_for_input'] = () => {
-        //     return new Promise((resolve) => {
-        //         _wasmResume = resolve;   // JS holds the key to resuming
-        //     });
-        // };
 
         // Call this from anywhere (Elm port handler, button, etc.) to wake WASM
         window.sendToWasm = (text) => {

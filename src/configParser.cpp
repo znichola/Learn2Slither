@@ -44,6 +44,7 @@ Trainer::Config parseConfig(const std::string &configStr) {
         else if (key == "epsilon_decay") config.epsilon_decay = value;
         else if (key == "epsilon_min") config.epsilon_min = value;
         else if (key == "statefn") config.stateFn = State::parse(valueStr);
+        else if (key == "state_init") config.stateInit = State::parseInit(valueStr);
 
         else if (key == "reward_advance") config.reward_advance = value;
         else if (key == "reward_green") config.reward_green = value;
@@ -54,7 +55,6 @@ Trainer::Config parseConfig(const std::string &configStr) {
             Logger::error() << "Warning: Unrecognized config key: " << key << std::endl;
         }
     }
-
 
     return config;
 }
@@ -76,6 +76,7 @@ std::string serialiseConfig(const Trainer::Config &config) {
         << "\"epsilon_decay\":" << config.epsilon_decay << ","
         << "\"epsilon_min\":" << config.epsilon_min << ","
         << "\"statefn\":\"" << State::serialise(config.stateFn) << "\","
+        << "\"state_init\":\"" << State::serialise(config.stateInit) << "\","
 
         << "\"reward_advance\":" << config.reward_advance << ","
         << "\"reward_green\":" << config.reward_green << ","

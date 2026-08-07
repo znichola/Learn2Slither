@@ -2,10 +2,10 @@
 #include <algorithm>
 #include <array>
 #include <sstream>
+#include <iomanip>
 #include <regex>
 
 #include "agent.hpp"
-#include "base64.hpp"
 
 static Move argmax(const std::array<float, 4>& values, std::mt19937 &rng) {
     float best_value = values[0];
@@ -15,7 +15,7 @@ static Move argmax(const std::array<float, 4>& values, std::mt19937 &rng) {
         if (values[i] > best_value) {
             best_value = values[i];
             best_indices = {i};
-        } else if (values[i] == best_value) {
+        } else if (false && values[i] == best_value) { //  TODO check without this random
             // build a vector of equal values, to randomly pick between them
             best_indices.push_back(i);
         }
@@ -25,10 +25,70 @@ static Move argmax(const std::array<float, 4>& values, std::mt19937 &rng) {
     return static_cast<Move>(best_indices[dist(rng)]);
 }
 
+std::array<float, 4>& Agent::getOrInsertQ(const Vision &vision) {
+    const std::string key = state(vision);
+    auto it = q_table.find(key);
+    if (it != q_table.end()) {
+        return it->second;
+    }
+
+    std::array<float, 4> init_values = {0.f, 0.f, 0.f, 0.f};
+
+    if (stateInit == State::Init::INSTANT_DEATH) {
+        auto is_fatal = [](const std::vector<Board::Cell>& direction) {
+            return !direction.empty() &&
+                   (direction[0] == Board::Cell::Wall || direction[0] == Board::Cell::Snake);
+        };
+        if (is_fatal(vision._north)) init_values[0] = reward_death;
+        if (is_fatal(vision._east))  init_values[1] = reward_death;
+        if (is_fatal(vision._south)) init_values[2] = reward_death;
+        if (is_fatal(vision._west))  init_values[3] = reward_death;
+    }
+
+    return q_table[key] = init_values;
+}
+
+float& Agent::getOrInsertRay(const std::string& key) {
+    auto it = q_table.find(key);
+    if (it != q_table.end()) {
+        return it->second[0];
+    }
+
+    float init_val = 0.f;
+    if (stateInit == State::Init::INSTANT_DEATH && !key.empty()) {
+        const char first_cell = key[0];
+        if (first_cell == State::map(Board::Cell::Wall) ||
+            first_cell == State::map(Board::Cell::Snake)) {
+            init_val = reward_death;
+        }
+    }
+
+    return q_table.try_emplace(key, std::array<float,4>{init_val, 0.f, 0.f, 0.f}).first->second[0];
+}
+
+float Agent::getRayValue(const std::string& key) const {
+    auto it = q_table.find(key);
+    if (it != q_table.end()) {
+        return it->second[0];
+    }
+
+    if (stateInit == State::Init::INSTANT_DEATH && !key.empty()) {
+        const char first_cell = key[0];
+        if (first_cell == State::map(Board::Cell::Wall) ||
+            first_cell == State::map(Board::Cell::Snake)) {
+            return reward_death;
+        }
+    }
+
+    return 0.f;
+}
+
 Move Agent::chooseAction(const Vision &vision) {
     std::uniform_real_distribution<float> dist(0.f, 1.f);
 
+    _random_trigger = false;
     if (dist(rng) < epsilon) {
+        _random_trigger = true;
         std::uniform_int_distribution<int> action_dist(0, NUM_ACTIONS - 1);
         return static_cast<Move>(action_dist(rng));
     } else if (rayState) {
@@ -42,15 +102,44 @@ Move Agent::chooseAction(const Vision &vision) {
     }
 }
 
+std::string Agent::logDecision(const Vision& vision, Move chosen) {
+    std::array<float, 4> values;
+
+    if (rayState) {
+        auto keys = rayKeysByMove(vision);
+
+        for (int i = 0; i < NUM_ACTIONS; i++)
+            values[i] = getOrInsertRay(keys[i]);
+    } else {
+        values = getOrInsertQ(vision);
+    }
+
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2);
+    ss << "Decision: "
+        << "mode=" << (rayState ? "R" : "V")
+        << " eps=" << epsilon
+        << " rnd=" << _random_trigger
+        << " chosen=" << chosen
+        << "[U:" << values[0]
+        << " R:" << values[1]
+        << " D:" << values[2]
+        << " L:" << values[3]
+        << "]";
+    return ss.str();
+}
+
 Move Agent::chooseActionNoUpdate(const Vision &vision) {
     std::uniform_real_distribution<float> dist(0.f, 1.f);
 
+    _random_trigger = false;
     if (rayState) {
         auto keys = rayKeysByMove(vision);
         std::array<float, 4> values;
         for (int i = 0; i < NUM_ACTIONS; i++) values[i] = getRayValue(keys[i]);
 
         if (dist(rng) < epsilon) {
+            _random_trigger = true;
             std::uniform_int_distribution<int> action_dist(0, NUM_ACTIONS - 1);
             return static_cast<Move>(action_dist(rng));
         }
@@ -60,12 +149,12 @@ Move Agent::chooseActionNoUpdate(const Vision &vision) {
     const auto& maybe_q_value = getQ(vision);
 
     if (dist(rng) < epsilon || !maybe_q_value.has_value()) {
+        _random_trigger = true;
         std::uniform_int_distribution<int> action_dist(0, NUM_ACTIONS - 1);
         return static_cast<Move>(action_dist(rng));
     }
     return argmax(maybe_q_value.value(), rng);
 }
-
 
 void Agent::updateQtable(const Vision &vision, Move move, float reward,
                          const Vision &next_vision) {

@@ -22,6 +22,7 @@ public:
         float epsilon_decay = 0.995f;   // decay rate for epsilon
         float epsilon_min = 0.01f;
         State::Type stateFn = State::Type::FIRST_NON_EMPTY;
+        State::Init stateInit = State::Init::ZEROS;
 
         // reward config
         float reward_advance = 0.0f;

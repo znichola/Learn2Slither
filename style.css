@@ -128,8 +128,19 @@ commit {
     gap: 1.25rem;
 }
 
-.status-details {
+.inner-board {
     display: flex;
+    flex-direction: column-reverse;
+}
+
+.board-column {
+    flex-grow: 1;
+}
+
+.board-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 
@@ -192,7 +203,7 @@ commit {
     border-radius: 0.375rem;
     border: 0.0625rem dashed var(--panel-border);
     color: var(--accent);
-    height: calc(var(--cell-size)*10 + 2.5rem);
+    height: calc(var(--cell-size)*10 + 2.33rem);
     /* height: 22.05rem; */
     align-content: center;
 }
@@ -457,6 +468,11 @@ button:hover {
 
     .container {
         grid-template-columns: 2fr 1fr;
+    }
+
+    .inner-board {
+        display: flex;
+        flex-direction: unset;
     }
 
     .info-section {
