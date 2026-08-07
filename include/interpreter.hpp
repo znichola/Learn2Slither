@@ -46,6 +46,17 @@ namespace State {
     return Board::mapping[static_cast<size_t>(c)];
 }
     typedef std::function<std::string(const Vision&)> StateFn;
+    typedef std::function<std::string(const std::vector<Board::Cell>&)> RayStateFn;
+
+    inline std::string rayFull(const std::vector<Board::Cell>& ray) {
+        std::string res;
+        res.reserve(ray.size());
+
+        for (auto& c : ray) {
+            res += map(c);
+        }
+        return res;
+    }
 
     inline std::string full(const Vision &v) {
         std::string res;
@@ -77,39 +88,43 @@ namespace State {
         return res;
     }
 
-    inline std::string firstAndNextNonEmpty(const Vision &v) {
+    inline std::string rayFirstAndNextNonEmpty(const std::vector<Board::Cell>& ray) {
         std::string res;
-        res.reserve(8);
+        res.reserve(2);
 
-        auto compress = [&](const auto& direction) {
-            bool first = true;
-            for (auto& c : direction) {
-                if (first) {
-                    res += map(c);
-                    first = false;
-                } else {
-                    if (c == Board::Cell::Empty) continue;
-                    res += map(c);
-                    break;
-                }
+        bool first = true;
+        for (auto& c : ray) {
+            if (first) {
+                res += map(c);
+                first = false;
+            } else {
+                if (c == Board::Cell::Empty) continue;
+                res += map(c);
+                break;
             }
-        };
-
-        compress(v._north);
-        compress(v._east);
-        compress(v._south);
-        compress(v._west);
-
+        }
         return res;
     }
 
-    enum class Type { FULL, FIRST_NON_EMPTY, FIRST_AND_NEXT_NON_EMPTY }; // SINGLE_DIMENTION
+    inline std::string firstAndNextNonEmpty(const Vision &v) {
+        std::string res;
+        res.reserve(8);
+        res += rayFirstAndNextNonEmpty(v._north);
+        res += rayFirstAndNextNonEmpty(v._east);
+        res += rayFirstAndNextNonEmpty(v._south);
+        res += rayFirstAndNextNonEmpty(v._west);
+        return res;
+    }
+
+    enum class Type { FULL, FIRST_NON_EMPTY, FIRST_AND_NEXT_NON_EMPTY, SINGLE_DIMENSION_FANNE, SINGLE_DIMENSION_FULL };
 
     inline std::string serialise(Type t) {
         switch (t) {
             case Type::FULL: return "FULL";
             case Type::FIRST_NON_EMPTY: return "FIRST_NON_EMPTY";
             case Type::FIRST_AND_NEXT_NON_EMPTY: return "FIRST_AND_NEXT_NON_EMPTY";
+            case Type::SINGLE_DIMENSION_FANNE: return "SINGLE_DIMENSION_FANNE";
+            case Type::SINGLE_DIMENSION_FULL: return "SINGLE_DIMENSION_FULL";
             default: return "UNKNOWN";
         }
     }
@@ -119,6 +134,8 @@ namespace State {
         if (s == "FULL") return Type::FULL;
         if (s == "FIRST_NON_EMPTY") return Type::FIRST_NON_EMPTY;
         if (s == "FIRST_AND_NEXT_NON_EMPTY") return Type::FIRST_AND_NEXT_NON_EMPTY;
+        if (s == "SINGLE_DIMENSION_FANNE") return Type::SINGLE_DIMENSION_FANNE;
+        if (s == "SINGLE_DIMENSION_FULL") return Type::SINGLE_DIMENSION_FULL;
 
         throw std::invalid_argument("Invalid State::Type string: " + s);
     }
@@ -128,8 +145,18 @@ namespace State {
             case Type::FULL: return full;
             case Type::FIRST_NON_EMPTY: return firstNonEmpty;
             case Type::FIRST_AND_NEXT_NON_EMPTY: return firstAndNextNonEmpty;
+            case Type::SINGLE_DIMENSION_FANNE: return firstAndNextNonEmpty; // invalid as it's superceded by getRay
+            case Type::SINGLE_DIMENSION_FULL: return full; // invalid as it's superceded by getRay
         }
         throw std::runtime_error("Invalid STATE representation");
+    }
+
+    inline RayStateFn getRay(Type t) {
+        switch (t) {
+            case Type::SINGLE_DIMENSION_FANNE: return rayFirstAndNextNonEmpty;
+            case Type::SINGLE_DIMENSION_FULL: return rayFull;
+            default: return nullptr;
+        }
     }
 
 

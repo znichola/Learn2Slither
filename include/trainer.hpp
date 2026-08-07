@@ -47,7 +47,4 @@ public:
     unsigned _current_ep = 0;
 
     void updateConfig(const Config &config);
-
-    // NOTE to encode/decode we use the already built config parser
-    // for the subobjects of agent and pipeline, that's what we need to dyncamically load and replace with loaded files.
 };

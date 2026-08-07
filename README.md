@@ -41,7 +41,7 @@ Discount facotor, or impact of future reward. It should always be below 1, else 
 
 Scale matters, keep everything around 1 and below. Death should maybe be 0, it's already punched becasue no  future rewards can be had. (Idk how this fits in with the model as it is. Maybe 1 for eat apple, 0.2 for red apple, and death is -0.1?)
 
-### Epsylon and epsylon decay
+### epsilon and epsilon decay
 
 Random exploration vs exploitation, how likely the model is to pick at random can be usefull to explore a large number of states at first, and then fine tune to only the best actions. Also these are fine tuning methods and should be focused on once the basic model works, they should be used to optimise the training time.
 

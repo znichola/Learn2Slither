@@ -93,6 +93,48 @@ defaultConfig =
 
 
 
+-- EPSILON ESTIMATION
+
+
+episodesToReachMin : Config -> Maybe Int
+episodesToReachMin config =
+    let
+        epsilonMin =
+            getField config.epsilonMin + 0.001
+    in
+    if getField config.epsilon <= epsilonMin then
+        Just 0
+
+    else if getField config.epsilonDecay <= 0 then
+        Just 1
+
+    else if getField config.epsilonDecay >= 1 || epsilonMin <= 0 then
+        Nothing
+
+    else
+        Just (ceiling (logBase (getField config.epsilonDecay) (epsilonMin / getField config.epsilon)))
+
+
+epsilonDecayHint : Config -> String
+epsilonDecayHint config =
+    let
+        base =
+            "Multiplied with epsilon each episode. When lower, exploration drops off faster. Set to 0.0 to remove decay. "
+    in
+    case episodesToReachMin config of
+        Just n ->
+            base ++ "At current settings, epsilon would reach ~" ++ String.fromFloat (getField config.epsilonMin) ++ " after " ++ String.fromInt n ++ " episodes."
+
+        Nothing ->
+            base ++ "At current settings, epsilon will never reach its minimum."
+
+
+withComputedHints : Config -> Config
+withComputedHints config =
+    { config | epsilonDecay = updateFieldHint (epsilonDecayHint config) config.epsilonDecay }
+
+
+
 -- PORTS
 
 
@@ -110,7 +152,7 @@ type Msg
     = SendStep String
     | ToggleSnakeVision
     | StartManual
-    | StartAI
+    | StartAI Float
     | StartTrain
     | SendStopTrain
     | SendTrainMore
@@ -278,9 +320,9 @@ update msg model =
             , sendToJs payload
             )
 
-        StartAI ->
+        StartAI epsilon ->
             ( { model | activeSession = Just { mode = AI, batch = [] }, replayingRun = Nothing, logs = Log "Sent AI play command to WASM" :: model.logs }
-            , sendToJs (Encode.object [ ( "type", Encode.string "AI" ), ( "value", Encode.string "start AI play" ) ])
+            , sendToJs (Encode.object [ ( "type", Encode.string "AI" ), ( "value", Encode.float epsilon ) ])
             )
 
         StartTrain ->
@@ -367,7 +409,7 @@ view model =
             [ viewLogs model.replayingRun model.logs ]
         , div [ class "input-section" ]
             [ viewAppControl model
-            , viewConfig model.config UpdateConfig
+            , viewConfig (withComputedHints model.config) UpdateConfig
             ]
         ]
 
@@ -403,7 +445,7 @@ viewAppControl model =
     in
     div [ class "control-buttons", preventDefaultOn "keydown" arrowKeyDecoder ]
         [ button [ onClick StartManual ] [ text "Manual play" ]
-        , button [ onClick StartAI ] [ text "AI play" ]
+        , button [ onClick (StartAI (getField model.config.epsilonMin)) ] [ text "AI play" ]
         , if isTraining then
             button [ onClick SendStopTrain ] [ text "Stop Training" ]
 
