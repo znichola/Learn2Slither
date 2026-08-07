@@ -57,8 +57,6 @@ static void handle(const Reader::Train& m, AppState& state) {
 
     Logger::log() << "Parsed config:\n" << serialiseConfig(config);
 
-    // TODO need a seperate start a fresh training and continue training (using existing agent state)
-
     state.trainer = Trainer(config);
     state.trainer.train();
 }
@@ -73,8 +71,9 @@ static void handle(const Reader::ResumeTrain& m, AppState& state) {
 }
 
 static void handle(const Reader::AI& m, AppState& state) {
-    (void)m;
-    Logger::log() << "Starting AI play mode, with latest trained model";
+    state.trainer.agent.epsilon = std::stof(m.content);
+    Logger::log() << "Starting AI play mode, with latest trained model, with an exploration rate of " 
+        << state.trainer.agent.epsilon << " (uses epsilonMin)";
     state.trainer.AIplay();
 }
 
@@ -186,6 +185,7 @@ static void handle(const Reader::LoadAgent& m, AppState& state) {
 
     state.trainer.config = parseConfig(agentConfig);
     state.trainer.agent.parseQTable(agentQtable);
+    state.trainer.agent.epsilon = state.trainer.config.epsilon_min;
 
     Logger::log() << "Loaded " << agentName
                   << " | State representation: " << State::serialise(state.trainer.config.stateFn)

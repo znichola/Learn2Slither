@@ -62,6 +62,8 @@ type StateType
     = Full
     | FirstNonEmpty
     | FirstAndNextNonEmpty
+    | SingleDimensionFANNE
+    | SingleDimensionFULL
 
 
 
@@ -110,6 +112,12 @@ stateToString s =
         FirstAndNextNonEmpty ->
             "FIRST_AND_NEXT_NON_EMPTY"
 
+        SingleDimensionFANNE ->
+            "SINGLE_DIMENSION_FANNE"
+
+        SingleDimensionFULL ->
+            "SINGLE_DIMENSION_FULL"
+
 
 stringToState : String -> StateType
 stringToState str =
@@ -122,6 +130,12 @@ stringToState str =
 
         "FIRST_AND_NEXT_NON_EMPTY" ->
             FirstAndNextNonEmpty
+
+        "SINGLE_DIMENSION_FANNE" ->
+            SingleDimensionFANNE
+
+        "SINGLE_DIMENSION_FULL" ->
+            SingleDimensionFULL
 
         _ ->
             Full
@@ -166,7 +180,7 @@ viewEnumField :
 viewEnumField labelText field current toMsg =
     let
         options =
-            [ Full, FirstNonEmpty, FirstAndNextNonEmpty ]
+            [ Full, FirstNonEmpty, FirstAndNextNonEmpty, SingleDimensionFANNE, SingleDimensionFULL ]
     in
     span [ class "config-field" ]
         [ label [] [ text labelText ]

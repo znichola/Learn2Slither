@@ -14,6 +14,7 @@ Trainer::Trainer(const Config &config)
         .epsilon_decay = config.epsilon_decay,
         .epsilon_min = config.epsilon_min,
         .state = State::get(config.stateFn),
+        .rayState = State::getRay(config.stateFn),
         .q_table = {}
         }),
       pipe(Board(config.board_x, config.board_y), {
@@ -142,7 +143,6 @@ void Trainer::train() {
 }
 
 float Trainer::reward(MoveRes moveRes) {
-    // TODO: Maybe this can be switched up with more sofisticated reasoning
     switch (moveRes) {
         case MoveRes::Advance: return config.reward_advance;
         case MoveRes::Green:   return config.reward_green;
