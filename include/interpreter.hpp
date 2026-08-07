@@ -104,6 +104,9 @@ namespace State {
                 break;
             }
         }
+        if (res.size() == 1) {
+            res += res[0];
+        }
         return res;
     }
 

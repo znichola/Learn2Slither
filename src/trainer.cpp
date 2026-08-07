@@ -4,6 +4,7 @@
 #include "agent.hpp"
 
 #include "logger.hpp"
+#include <iomanip>
 
 Trainer::Trainer(const Config &config)
     : config(config), 
@@ -89,12 +90,13 @@ void Trainer::AIplay() {
                 ;
 }
 
-void Trainer::trainEpisode(bool log) {
+Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
     Board board = pipe.genBoard(agent.rng());
 
-    unsigned step = 0;
+    currentBoards.clear();
+    currentBoards.push_back(board);
 
-    if (log) Logger::board() << board;
+    unsigned step = 0;
 
     const int maxStepsSinceEat = config.MAX_STEPS / 10;
     int stepsSinceEat = 0;
@@ -108,6 +110,7 @@ void Trainer::trainEpisode(bool log) {
         if (next_board.moveRes == MoveRes::Death) {
             if (log) Logger::log() << agent.logDecision(vision, action);
             agent.updateQtableOnDeath(vision, action, _reward);
+            currentBoards.push_back(next_board);
             break;
         } else {
             Vision next_vision(next_board);
@@ -118,22 +121,25 @@ void Trainer::trainEpisode(bool log) {
             stepsSinceEat = 0;
         else
             stepsSinceEat++;
-        if (stepsSinceEat >= maxStepsSinceEat)
-            break;
 
         board = next_board;
+        currentBoards.push_back(board);
 
-        if (log) Logger::board() << board;
+        if (stepsSinceEat >= maxStepsSinceEat)
+            break;
     }
+
     if (log) {
         Logger::QTABLE_SIZE(agent.q_table.size());
-        Logger::RUN_DONE() << "Episode " 
+        Logger::log() << "Episode "
                     << _current_ep << "/" << config.EPISODES
                     << " Steps " << step
                     << " Length " << board.snakeLength()
                     << " qtable " << agent.q_table.size()
                     ;
     }
+
+    return EpisodeResult{ step, board.snakeLength() };
 }
 
 void Trainer::train() {
@@ -146,12 +152,38 @@ void Trainer::train() {
     unsigned remaining = config.EPISODES - _current_ep;
     unsigned toRun = std::min(config.SAMPLE_PER_REPLAY, remaining);
 
-    for (unsigned i = 0; i < toRun; ++i) {
+    EpochStats stats;
+    bestBoards.clear();
+    unsigned bestLength = 0;
+    bool haveBest = false;
 
+    for (unsigned i = 0; i < toRun; ++i) {
         bool shouldLog = (i == toRun - 1);
-        trainEpisode(shouldLog);
+
+        EpisodeResult result = trainEpisode(shouldLog);
         agent.decayEpsilon();
         _current_ep += 1;
+
+        stats.add(result.length, result.steps);
+
+        if (!haveBest || result.length > bestLength) {
+            bestLength = result.length;
+            bestBoards = currentBoards; // copy: currentBoards gets overwritten next episode
+            haveBest = true;
+        }
+    }
+
+    if (toRun > 1) {
+        for (const Board &b : bestBoards)
+            Logger::board() << b;
+
+        Logger::RUN_DONE() << "Epoch summary: "
+            << std::fixed << std::setprecision(2)
+            << "length: " << stats.minLength << " to " << stats.maxLength 
+            << " mean:" << stats.meanLength << " stddev:" << stats.stddevLength()
+            << " | steps:" << stats.minSteps << " to " << stats.maxSteps
+            << " mean:" << stats.meanSteps << " stddev:" << stats.stddevSteps()
+            << " | Showing best run: length:" << bestLength << " steps: " << bestBoards.size();
     }
 }
 
