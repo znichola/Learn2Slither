@@ -48,12 +48,21 @@ void Trainer::AIplay() {
 
     Logger::board() << board;
 
+    const int maxStepsSinceEat = config.MAX_STEPS / 10;
+    int stepsSinceEat = 0;
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
         Move action = agent.chooseActionNoUpdate(vision);
         Board next_board = board.doMove(action, agent.rng());
 
         if (next_board.moveRes == MoveRes::Death)
+            break;
+
+        if (next_board.moveRes == MoveRes::Green || next_board.moveRes == MoveRes::Red)
+            stepsSinceEat = 0;
+        else
+            stepsSinceEat++;
+        if (stepsSinceEat >= maxStepsSinceEat)
             break;
 
         board = next_board;
@@ -101,7 +110,6 @@ void Trainer::trainEpisode(bool log) {
         board = next_board;
 
         if (log) Logger::board() << board;
-
     }
     if (log) {
         Logger::QTABLE_SIZE(agent.q_table.size());
@@ -128,6 +136,7 @@ void Trainer::train() {
 
         bool shouldLog = (i == toRun - 1);
         trainEpisode(shouldLog);
+        agent.decayEpsilon();
         _current_ep += 1;
     }
 }
