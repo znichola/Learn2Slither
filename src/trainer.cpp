@@ -64,9 +64,18 @@ void Trainer::AIplay() {
 
     const int maxStepsSinceEat = config.MAX_STEPS / 10;
     int stepsSinceEat = 0;
+
+    Vision lastVision(board);
+    Move lastAction = Move::Up;
+    bool haveDecision = false;
+
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
         Move action = agent.chooseActionNoUpdate(vision);
+        lastVision = vision;
+        lastAction = action;
+        haveDecision = true;
+
         Board next_board = board.doMove(action, agent.rng());
 
         if (next_board.moveRes == MoveRes::Death)
@@ -83,6 +92,10 @@ void Trainer::AIplay() {
 
         Logger::board() << board;
     }
+
+    if (haveDecision)
+        Logger::log() << agent.logDecision(lastVision, lastAction);
+
     Logger::RUN_DONE() << "AI"
                 << " Steps " << step
                 << " Length " << board._snake.size()
@@ -143,14 +156,26 @@ Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
 }
 
 void Trainer::train() {
-    if (_current_ep >= config.EPISODES) {
-        Logger::RUN_DONE() << "Training complete " << _current_ep
-            << "/" << config.EPISODES << " episodes trained.";
-        return;
-    }
+    // EPISODES == 0 means "just run a single one-off test episode with the
+    // current agent/config and report it" — it doesn't advance _current_ep
+    // or count towards a training run, so it can be re-triggered freely.
+    const bool singleTestRun = config.EPISODES == 0;
+    unsigned toRun;
 
-    unsigned remaining = config.EPISODES - _current_ep;
-    unsigned toRun = std::min(config.SAMPLE_PER_REPLAY, remaining);
+    if (singleTestRun) {
+        toRun = 1;
+    } else {
+        if (_current_ep >= config.EPISODES) {
+            Logger::RUN_DONE() << "Training complete " << _current_ep
+                << "/" << config.EPISODES << " episodes trained.";
+            return;
+        }
+
+        unsigned remaining = config.EPISODES - _current_ep;
+        // Guard against SAMPLE_PER_REPLAY == 0, which would otherwise run
+        // zero episodes, report nothing, and silently hang the session.
+        toRun = std::max(1u, std::min(config.SAMPLE_PER_REPLAY, remaining));
+    }
 
     EpochStats stats;
     bestBoards.clear();
@@ -162,7 +187,7 @@ void Trainer::train() {
 
         EpisodeResult result = trainEpisode(shouldLog);
         agent.decayEpsilon();
-        _current_ep += 1;
+        if (!singleTestRun) _current_ep += 1;
 
         stats.add(result.length, result.steps);
 
@@ -173,13 +198,17 @@ void Trainer::train() {
         }
     }
 
-    if (toRun > 1) {
-        for (const Board &b : bestBoards)
-            Logger::board() << b;
+    for (const Board &b : bestBoards)
+        Logger::board() << b;
 
+    if (singleTestRun) {
+        Logger::RUN_DONE() << "Test run: "
+            << std::fixed << std::setprecision(2)
+            << "length: " << bestLength << " steps: " << bestBoards.size();
+    } else {
         Logger::RUN_DONE() << "Epoch summary: "
             << std::fixed << std::setprecision(2)
-            << "length: " << stats.minLength << " to " << stats.maxLength 
+            << "length: " << stats.minLength << " to " << stats.maxLength
             << " mean:" << stats.meanLength << " stddev:" << stats.stddevLength()
             << " | steps:" << stats.minSteps << " to " << stats.maxSteps
             << " mean:" << stats.meanSteps << " stddev:" << stats.stddevSteps()
