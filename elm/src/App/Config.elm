@@ -64,8 +64,10 @@ type StateType
     = Full
     | FirstNonEmpty
     | FirstAndNextNonEmpty
-    | SingleDimensionFANNE
+    | DistToClosest
     | SingleDimensionFULL
+    | SingleDimensionFANNE
+    | SingleDimensionDTC
 
 
 type StateInitType
@@ -123,11 +125,17 @@ stateTypeToString s =
         FirstAndNextNonEmpty ->
             "FIRST_AND_NEXT_NON_EMPTY"
 
-        SingleDimensionFANNE ->
-            "SINGLE_DIMENSION_FANNE"
+        DistToClosest ->
+            "DIST_TO_CLOSEST"
 
         SingleDimensionFULL ->
             "SINGLE_DIMENSION_FULL"
+
+        SingleDimensionFANNE ->
+            "SINGLE_DIMENSION_FANNE"
+
+        SingleDimensionDTC ->
+            "SINGLE_DIMENSION_DTC"
 
 
 stringToStateType : String -> StateType
@@ -142,11 +150,17 @@ stringToStateType str =
         "FIRST_AND_NEXT_NON_EMPTY" ->
             FirstAndNextNonEmpty
 
-        "SINGLE_DIMENSION_FANNE" ->
-            SingleDimensionFANNE
+        "DIST_TO_CLOSEST" ->
+            DistToClosest
 
         "SINGLE_DIMENSION_FULL" ->
             SingleDimensionFULL
+
+        "SINGLE_DIMENSION_FANNE" ->
+            SingleDimensionFANNE
+
+        "SINGLE_DIMENSION_DTC" ->
+            SingleDimensionDTC
 
         _ ->
             Full
@@ -243,7 +257,7 @@ viewConfig config toMsg =
             , viewIntField "Max Steps" MaxSteps config.maxSteps toMsg
             , viewEnumField "State Representation"
                 StateFn
-                [ Full, FirstNonEmpty, FirstAndNextNonEmpty, SingleDimensionFANNE, SingleDimensionFULL ]
+                [ Full, FirstNonEmpty, FirstAndNextNonEmpty, DistToClosest, SingleDimensionFANNE, SingleDimensionFULL, SingleDimensionDTC ]
                 stateTypeToString
                 config.stateFn
                 toMsg

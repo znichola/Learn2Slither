@@ -120,12 +120,7 @@ std::string Agent::logDecision(const Vision& vision, Move chosen) {
         << "mode=" << (rayState ? "R" : "V")
         << " eps=" << epsilon
         << " rnd=" << _random_trigger
-        << " chosen=" << chosen
-        << "[U:" << values[0]
-        << " R:" << values[1]
-        << " D:" << values[2]
-        << " L:" << values[3]
-        << "]";
+        << " chosen=" << chosen << "[U:" << values[0] << ",R:" << values[1] << ",D:" << values[2] << ",L:" << values[3] << "]";
     return ss.str();
 }
 
