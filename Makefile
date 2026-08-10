@@ -8,6 +8,7 @@ CC      = c++
 CFLAGS  = -Wall -Wextra
 CFLAGS  += -Werror
 CFLAGS  += -std=c++20
+# CFLAGS  += -O3
 
 ifdef DEBUG
 CFLAGS  += -g3 -fsanitize=address

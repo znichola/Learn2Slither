@@ -56,6 +56,7 @@ Board::Board(const std::string &board) {
         unsigned mask[] = {head+1, head-1, head+x_dim, head-x_dim};
         bool found = false;
         for (auto m : mask) {
+            if (m >= _grid.size()) continue;
             assert(m > 0 && "board init bounds underflow check");
             assert(m < _grid.size() && "board init bounds underflow check");
             auto f_it = find(_snake.begin(), _snake.end(), m);
@@ -80,6 +81,9 @@ Board::Op Board::randomSpawn(Cell t, unsigned seed) const {
             candidates.push_back(i);
         }
         i++;
+    }
+    if (candidates.empty()) {
+        return {*this, seed};
     }
     std::uniform_int_distribution<unsigned> dist(0, candidates.size() - 1);
     i = candidates[dist(rng)];

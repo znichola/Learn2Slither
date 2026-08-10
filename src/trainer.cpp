@@ -146,9 +146,9 @@ Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
         Logger::QTABLE_SIZE(agent.q_table.size());
         Logger::log() << "Episode "
                     << _current_ep << "/" << config.EPISODES
-                    << " Steps " << step
-                    << " Length " << board.snakeLength()
-                    << " qtable " << agent.q_table.size()
+                    << " Steps:" << step
+                    << " Length:" << board.snakeLength()
+                    << " qtable:" << agent.q_table.size()
                     ;
     }
 
@@ -156,9 +156,6 @@ Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
 }
 
 void Trainer::train() {
-    // EPISODES == 0 means "just run a single one-off test episode with the
-    // current agent/config and report it" — it doesn't advance _current_ep
-    // or count towards a training run, so it can be re-triggered freely.
     const bool singleTestRun = config.EPISODES == 0;
     unsigned toRun;
 
@@ -172,8 +169,6 @@ void Trainer::train() {
         }
 
         unsigned remaining = config.EPISODES - _current_ep;
-        // Guard against SAMPLE_PER_REPLAY == 0, which would otherwise run
-        // zero episodes, report nothing, and silently hang the session.
         toRun = std::max(1u, std::min(config.SAMPLE_PER_REPLAY, remaining));
     }
 
@@ -208,9 +203,9 @@ void Trainer::train() {
     } else {
         Logger::RUN_DONE() << "Epoch summary: "
             << std::fixed << std::setprecision(2)
-            << "length: " << stats.minLength << " to " << stats.maxLength
+            << "length: " << stats.minLength << "to" << stats.maxLength
             << " mean:" << stats.meanLength << " stddev:" << stats.stddevLength()
-            << " | steps:" << stats.minSteps << " to " << stats.maxSteps
+            << " | steps:" << stats.minSteps << "to" << stats.maxSteps
             << " mean:" << stats.meanSteps << " stddev:" << stats.stddevSteps()
             << " | Showing best run: length:" << bestLength << " steps: " << bestBoards.size();
     }

@@ -112,7 +112,7 @@ namespace State {
 
     inline std::string firstAndNextNonEmpty(const Vision &v) {
         std::string res;
-        res.reserve(8);
+        res.reserve(2*4);
         res += rayFirstAndNextNonEmpty(v._north);
         res += rayFirstAndNextNonEmpty(v._east);
         res += rayFirstAndNextNonEmpty(v._south);
@@ -120,7 +120,57 @@ namespace State {
         return res;
     }
 
-    enum class Type { FULL, FIRST_NON_EMPTY, FIRST_AND_NEXT_NON_EMPTY, SINGLE_DIMENSION_FANNE, SINGLE_DIMENSION_FULL };
+    inline std::string rayDistToClosest(const std::vector<Board::Cell>& ray) {
+        std::string res;
+        res.reserve(3);
+
+        size_t firstIdx = ray.size();
+        for (size_t i = 0; i < ray.size(); ++i) {
+            if (ray[i] != Board::Cell::Empty) {
+                firstIdx = i;
+                break;
+            }
+        }
+
+        if (firstIdx == ray.size()) {
+            res += '4';
+            res += Board::mapping[static_cast<int>(Board::Cell::Empty)];
+            res += Board::mapping[static_cast<int>(Board::Cell::Empty)];
+            return res;
+        }
+
+        int dist = static_cast<int>(firstIdx) + 1;
+        if (dist > 4) dist = 4;
+        res += static_cast<char>('0' + dist);
+        res += Board::mapping[static_cast<int>(ray[firstIdx])];
+
+        size_t nextIdx = ray.size();
+        for (size_t i = firstIdx + 1; i < ray.size(); ++i) {
+            if (ray[i] != Board::Cell::Empty) {
+                nextIdx = i;
+                break;
+            }
+        }
+
+        res += (nextIdx != ray.size())
+            ? Board::mapping[static_cast<int>(ray[nextIdx])]
+            : Board::mapping[static_cast<int>(ray[firstIdx])];
+
+        return res;
+    }
+
+    inline std::string distToClosest(const Vision &v) {
+        std::string res;
+        res.reserve(3*4);
+        res += rayDistToClosest(v._north);
+        res += rayDistToClosest(v._east);
+        res += rayDistToClosest(v._south);
+        res += rayDistToClosest(v._west);
+        return res;
+    }
+
+
+    enum class Type { FULL, FIRST_NON_EMPTY, FIRST_AND_NEXT_NON_EMPTY, DIST_TO_CLOSEST, SINGLE_DIMENSION_FULL, SINGLE_DIMENSION_FANNE, SINGLE_DIMENSION_DTC };
     enum class Init { ZEROS, INSTANT_DEATH };
 
     inline std::string serialise(Type t) {
@@ -128,8 +178,10 @@ namespace State {
             case Type::FULL: return "FULL";
             case Type::FIRST_NON_EMPTY: return "FIRST_NON_EMPTY";
             case Type::FIRST_AND_NEXT_NON_EMPTY: return "FIRST_AND_NEXT_NON_EMPTY";
-            case Type::SINGLE_DIMENSION_FANNE: return "SINGLE_DIMENSION_FANNE";
+            case Type::DIST_TO_CLOSEST: return "DIST_TO_CLOSEST";
             case Type::SINGLE_DIMENSION_FULL: return "SINGLE_DIMENSION_FULL";
+            case Type::SINGLE_DIMENSION_FANNE: return "SINGLE_DIMENSION_FANNE";
+            case Type::SINGLE_DIMENSION_DTC: return "SINGLE_DIMENSION_DTC";
             default: return "UNKNOWN";
         }
     }
@@ -146,8 +198,10 @@ namespace State {
         if (s == "FULL") return Type::FULL;
         if (s == "FIRST_NON_EMPTY") return Type::FIRST_NON_EMPTY;
         if (s == "FIRST_AND_NEXT_NON_EMPTY") return Type::FIRST_AND_NEXT_NON_EMPTY;
+        if (s == "DIST_TO_CLOSEST") return Type::DIST_TO_CLOSEST;
         if (s == "SINGLE_DIMENSION_FANNE") return Type::SINGLE_DIMENSION_FANNE;
         if (s == "SINGLE_DIMENSION_FULL") return Type::SINGLE_DIMENSION_FULL;
+        if (s == "SINGLE_DIMENSION_DTC") return Type::SINGLE_DIMENSION_DTC;
 
         throw std::invalid_argument("Invalid State::Type string: " + s);
     }
@@ -165,8 +219,10 @@ namespace State {
             case Type::FULL: return full;
             case Type::FIRST_NON_EMPTY: return firstNonEmpty;
             case Type::FIRST_AND_NEXT_NON_EMPTY: return firstAndNextNonEmpty;
+            case Type::DIST_TO_CLOSEST: return distToClosest;
             case Type::SINGLE_DIMENSION_FANNE: return firstAndNextNonEmpty; // invalid as it's superseded by getRay
             case Type::SINGLE_DIMENSION_FULL: return full; // invalid as it's superseded by getRay
+            case Type::SINGLE_DIMENSION_DTC: return distToClosest; // invalid as it's superseded by getRay
         }
         throw std::runtime_error("Invalid STATE representation");
     }
@@ -175,6 +231,7 @@ namespace State {
         switch (t) {
             case Type::SINGLE_DIMENSION_FANNE: return rayFirstAndNextNonEmpty;
             case Type::SINGLE_DIMENSION_FULL: return rayFull;
+            case Type::SINGLE_DIMENSION_DTC: return rayDistToClosest;
             default: return nullptr;
         }
     }
