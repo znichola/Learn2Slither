@@ -8,43 +8,25 @@ fi
 ./snake <<EOF
 TRAIN_START[
 {
-    "EPISODES": 50000,
-    "SAMPLE_PER_REPLAY": 5000,
-    "MAX_STEPS": 800,
+    "EPISODES": 40000,
+    "SAMPLE_PER_REPLAY": 10000,
+    "MAX_STEPS": 1000,
     "frame_time_ms": 30,
     "board_x": 10,
     "board_y": 10,
-    "alpha": 0.05,
-    "gamma": 0.95,
-    "epsilon": 0.9,
-    "epsilon_decay": 0.9999,
-    "epsilon_min": 0,
-    "statefn": "FULL",
+    "alpha": 0.1,
+    "gamma": 0.99,
+    "epsilon": 1.0,
+    "epsilon_decay": 0.9998,
+    "epsilon_min": 0.05,
+    "statefn": "SINGLE_DIMENSION_DTC",
     "state_init": "INSTANT_DEATH",
-    "reward_advance": -0.1,
-    "reward_green": 10,
+    "reward_advance": -0.5,
+    "reward_green": 100,
     "reward_red": -2,
     "reward_death": -10
 }
 ]TRAIN_END
-RESUME_TRAIN_START[
-"continue"
-]RESUME_TRAIN_END
-RESUME_TRAIN_START[
-"continue"
-]RESUME_TRAIN_END
-RESUME_TRAIN_START[
-"continue"
-]RESUME_TRAIN_END
-RESUME_TRAIN_START[
-"continue"
-]RESUME_TRAIN_END
-RESUME_TRAIN_START[
-"continue"
-]RESUME_TRAIN_END
-RESUME_TRAIN_START[
-"continue"
-]RESUME_TRAIN_END
 RESUME_TRAIN_START[
 "continue"
 ]RESUME_TRAIN_END

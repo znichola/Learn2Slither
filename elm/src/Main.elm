@@ -153,7 +153,7 @@ type Msg
     = SendStep String
     | ToggleSnakeVision
     | StartManual
-    | StartAI Float
+    | StartAI
     | StartTrain
     | SendStopTrain
     | SendTrainMore
@@ -322,9 +322,9 @@ update msg model =
             , sendToJs payload
             )
 
-        StartAI epsilon ->
+        StartAI ->
             ( { model | activeSession = Just { mode = AI, batch = [] }, replayingRun = Nothing, logs = Log "Sent AI play command to WASM" :: model.logs }
-            , sendToJs (Encode.object [ ( "type", Encode.string "AI" ), ( "value", Encode.float epsilon ) ])
+            , sendToJs (Encode.object [ ( "type", Encode.string "AI" ), ( "value", encodeConfig model.config ) ])
             )
 
         StartTrain ->
@@ -461,7 +461,7 @@ viewAppControl model =
     in
     div [ class "control-buttons", preventDefaultOn "keydown" arrowKeyDecoder ]
         [ button [ onClick StartManual ] [ text "Manual play" ]
-        , button [ onClick (StartAI (getField model.config.epsilonMin)) ] [ text "AI play" ]
+        , button [ onClick StartAI ] [ text "AI play" ]
         , if isTraining then
             button [ onClick SendStopTrain ] [ text "Stop Training" ]
 

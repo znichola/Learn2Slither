@@ -7,21 +7,18 @@
 
 #include "agent.hpp"
 
-static Move argmax(const std::array<float, 4>& values, std::mt19937 &rng) {
+static Move argmax(const std::array<float, 4>& values) {
     float best_value = values[0];
-    std::vector<int> best_indices = {0};
+    int best_indiex  = 0;
 
     for (int i = 1; i < Agent::NUM_ACTIONS; i++) {
         if (values[i] > best_value) {
             best_value = values[i];
-            best_indices = {i};
-        } else if (false && values[i] == best_value) { //  TODO check without this random
-            best_indices.push_back(i);
+            best_indiex = i;
         }
     }
 
-    std::uniform_int_distribution<int> dist(0, best_indices.size() - 1);
-    return static_cast<Move>(best_indices[dist(rng)]);
+    return static_cast<Move>(best_indiex);
 }
 
 static bool is_fatal(const std::vector<Board::Cell>& direction) {
@@ -105,10 +102,10 @@ Move Agent::chooseAction(const Vision &vision) {
         auto keys = rayKeysByMove(vision);
         std::array<float, 4> values;
         for (int i = 0; i < NUM_ACTIONS; i++) values[i] = getOrInsertRay(keys[i]);
-        return argmax(values, rng);
+        return argmax(values);
     } else {
         const auto& q_values = getOrInsertQ(vision);
-        return argmax(q_values, rng);
+        return argmax(q_values);
     }
 }
 
@@ -135,7 +132,7 @@ std::string Agent::logDecision(const Vision& vision, Move chosen, const std::str
         << " rnd=" << _random_trigger
         << " chosen=" << chosen << "[U:" << values[0] << ",R:" << values[1] << ",D:" << values[2] << ",L:" << values[3] << "]"
         << " state=" << (wasFresh ? "fresh_state" : state(vision))
-        << " reson=" << reason
+        << " reason=" << reason
         ;
     return ss.str();
 }
@@ -152,11 +149,11 @@ Move Agent::chooseActionNoUpdate(const Vision &vision) {
         auto keys = rayKeysByMove(vision);
         std::array<float, 4> values;
         for (int i = 0; i < NUM_ACTIONS; i++) values[i] = getRayValue(keys[i]);
-        return argmax(values, rng);
+        return argmax(values);
     }
 
     const auto& keys = getQValue(vision);
-    return argmax(keys, rng);
+    return argmax(keys);
 }
 
 std::array<std::string, 4> Agent::rayKeysByMove(const Vision &v) const {
