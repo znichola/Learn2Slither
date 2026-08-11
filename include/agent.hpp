@@ -34,6 +34,8 @@ public:
 
     Move chooseAction(const Vision & vision);
     Move chooseActionNoUpdate(const Vision & vision);
+    Move randomSafeAction(const Vision &vision);
+    Move randomAction();
     std::string logDecision(const Vision& vision, Move chosen, const std::string &reason) const;
 
     void updateQtable(const Vision &vision, Move move, float reward, const Vision &next_vision);

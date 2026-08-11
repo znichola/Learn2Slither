@@ -75,21 +75,21 @@ defaultConfig : Config
 defaultConfig =
     { episodes = fieldInt 1000
     , samplePerReplay = fieldInt 100 |> updateFieldHint "Samples before training animation is played."
-    , maxSteps = fieldInt 500 |> updateFieldHint "Max steps per episode before stop."
+    , maxSteps = fieldInt 1000 |> updateFieldHint "Max steps per episode before stop."
     , frameTimeMs = fieldInt 30 |> updateFieldHint "During playback the delay between frames in ms."
     , boardX = fieldInt 10
     , boardY = fieldInt 10
     , alpha = fieldFloat 0.1 |> updateFieldHint "Learning rate. When lower, it's slower but more stable. (0.0 - 1.0)"
-    , gamma = fieldFloat 0.95 |> updateFieldHint "Discount factor for future rewards. When higher, the model prioritises future rewards more, but too high and the snake may loop to stay alive rather than risk seeking food. (0.0 - 1.0)"
-    , epsilon = fieldFloat 0.0 |> updateFieldHint "Exploration rate. At 1.0 it will always take random actions. (0.0 - 1.0)"
-    , epsilonDecay = fieldFloat 0.995 |> updateFieldHint "Multiplied with epsilon each episode. When lower, exploration drops off faster. Set to 0.0 to remove decay."
-    , epsilonMin = fieldFloat 0.0 |> updateFieldHint "Floor for epsilon when using epsilon decay."
-    , rewardAdvance = fieldFloat -0.1
+    , gamma = fieldFloat 0.995 |> updateFieldHint "Discount factor for future rewards. When higher, the model prioritises future rewards more, but too high and the snake may loop to stay alive rather than risk seeking food. (0.0 - 1.0)"
+    , epsilon = fieldFloat 0.8 |> updateFieldHint "Exploration rate. At 1.0 it will always take random actions. (0.0 - 1.0)"
+    , epsilonDecay = fieldFloat 0.9925 |> updateFieldHint "Multiplied with epsilon each episode. When lower, exploration drops off faster. Set to 0.0 to remove decay."
+    , epsilonMin = fieldFloat 0.05 |> updateFieldHint "Floor for epsilon when using epsilon decay."
+    , rewardAdvance = fieldFloat -0.01
     , rewardGreen = fieldFloat 10.0
     , rewardRed = fieldFloat -2.0
     , rewardDeath = fieldFloat -10.0
-    , stateFn = Full
-    , stateInit = Zeros
+    , stateFn = DistToClosest
+    , stateInit = InstantDeath
     }
 
 
@@ -220,7 +220,7 @@ applyWasmMessage wasmMsg model =
             case decodeConfig wasmMsg.content of
                 -- TODO ensure it's only on agent load that we push config
                 Ok config ->
-                    { model | config = config, activeSession = Just { mode = Training, batch = [] } }
+                    { model | config = config, activeSession = Nothing }
 
                 Err err ->
                     { model | logs = Error ("Failed to decode config: " ++ Decode.errorToString err) :: model.logs }
@@ -357,7 +357,7 @@ update msg model =
             )
 
         SendLoadAgent ->
-            ( { model | logs = [ Log "Sent AgentLoad command to WASM" ] }
+            ( { model | logs = [ Log "Sent AgentLoad command to WASM" ], activeSession = Nothing, replayingRun = Nothing }
             , sendToJs (Encode.object [ ( "type", Encode.string "LOAD_AGENT" ), ( "value", Encode.string "load agent state" ) ])
             )
 
