@@ -8,7 +8,7 @@ CC      = c++
 CFLAGS  = -Wall -Wextra
 CFLAGS  += -Werror
 CFLAGS  += -std=c++20
-# CFLAGS  += -O3
+CFLAGS  += -O3
 
 ifdef DEBUG
 CFLAGS  += -g3 -fsanitize=address
@@ -49,7 +49,7 @@ $(NAME): $(OBJS) $(MAIN_OBJ)
 clean:
 	-rm $(OBJS) $(MAIN_OBJ)
 
-fclean: clean wasm-clean test-clean
+fclean: clean wasm-clean test-clean elm-clean
 	-rm $(NAME)
 
 re: fclean all
@@ -93,7 +93,7 @@ test-clean:
 
 test: $(TEST_BINS)
 	@echo "Running all tests..."
-	@fail = 0; \
+	@fail=0; \
 	for t in $(TEST_BINS); do \
 		echo "==> Running $$t"; \
 		./$$t || fail=1; echo; \
@@ -108,6 +108,8 @@ test: $(TEST_BINS)
 
 ELM_NAME=elm.js
 
+ELM_FLAGS=--optimize
+
 deps/elm:
 	mkdir -p deps && cd deps \
 	&& curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz \
@@ -115,7 +117,7 @@ deps/elm:
 	&& chmod +x elm
 
 elm.js: elm/src/Main.elm elm/src/App/Config.elm elm/src/App/Board.elm deps/elm
-	cd elm && ../deps/elm make src/Main.elm --output=../elm.js
+	cd elm && ../deps/elm make $(ELM_FLAGS) src/Main.elm --output=../elm.js
 
 elm-clean:
 	-rm elm.js

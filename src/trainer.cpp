@@ -66,35 +66,38 @@ void Trainer::AIplay() {
     int stepsSinceEat = 0;
 
     Vision lastVision(board);
-    Move lastAction = Move::Up;
-    bool haveDecision = false;
+    Move lastMove = Move::Up;
+    EpisodeResult::EndReason reason = EpisodeResult::EndReason::MaxSteps;
 
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
         Move action = agent.chooseActionNoUpdate(vision);
         lastVision = vision;
-        lastAction = action;
-        haveDecision = true;
+        lastMove = action;
 
         Board next_board = board.doMove(action, agent.rng());
 
-        if (next_board.moveRes == MoveRes::Death)
+        if (next_board.moveRes == MoveRes::Death) {
+            reason = EpisodeResult::EndReason::Death;
             break;
+        }
 
         if (next_board.moveRes == MoveRes::Green || next_board.moveRes == MoveRes::Red)
             stepsSinceEat = 0;
         else
             stepsSinceEat++;
-        if (stepsSinceEat >= maxStepsSinceEat)
+        if (stepsSinceEat >= maxStepsSinceEat) {
+            reason = EpisodeResult::EndReason::NoFoodTimeout;
             break;
+        }
 
         board = next_board;
 
         Logger::board() << board;
     }
 
-    if (haveDecision)
-        Logger::log() << agent.logDecision(lastVision, lastAction);
+    if (step != 0)
+        Logger::log() << agent.logDecision(lastVision, lastMove, EpisodeResult::reasonToString(reason));
 
     Logger::RUN_DONE() << "AI"
                 << " Steps " << step
@@ -113,17 +116,24 @@ Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
 
     const int maxStepsSinceEat = config.MAX_STEPS / 10;
     int stepsSinceEat = 0;
+    Move lastMove = Move::Up;
+    EpisodeResult::EndReason reason = EpisodeResult::EndReason::MaxSteps;
+
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
         Move action = agent.chooseAction(vision);
+        lastMove = action;
         Board next_board = board.doMove(action, agent.rng());
 
         float _reward = reward(next_board.moveRes);
 
         if (next_board.moveRes == MoveRes::Death) {
-            if (log) Logger::log() << agent.logDecision(vision, action);
+            std::string stateKey;
+            if (agent.rayState) stateKey = agent.rayKeysByMove(vision)[static_cast<size_t>(action)];
+            else stateKey = agent.state(vision);
             agent.updateQtableOnDeath(vision, action, _reward);
             currentBoards.push_back(next_board);
+            reason = EpisodeResult::EndReason::Death;
             break;
         } else {
             Vision next_vision(next_board);
@@ -138,8 +148,10 @@ Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
         board = next_board;
         currentBoards.push_back(board);
 
-        if (stepsSinceEat >= maxStepsSinceEat)
+        if (stepsSinceEat >= maxStepsSinceEat) {
+            reason = EpisodeResult::EndReason::NoFoodTimeout;
             break;
+        }
     }
 
     if (log) {
@@ -152,7 +164,7 @@ Trainer::EpisodeResult Trainer::trainEpisode(bool log) {
                     ;
     }
 
-    return EpisodeResult{ step, board.snakeLength() };
+    return EpisodeResult{ step, board.snakeLength(), lastMove, reason };
 }
 
 void Trainer::train() {
@@ -173,7 +185,9 @@ void Trainer::train() {
     }
 
     EpochStats stats;
-    bestBoards.clear();
+    std::vector<Board> bestBoards;
+    Move bestBoardLastMove = Move::Up;
+    EpisodeResult::EndReason bestBoardlastMoveReason = EpisodeResult::EndReason::MaxSteps;
     unsigned bestLength = 0;
     bool haveBest = false;
 
@@ -188,13 +202,21 @@ void Trainer::train() {
 
         if (!haveBest || result.length > bestLength) {
             bestLength = result.length;
-            bestBoards = currentBoards; // copy: currentBoards gets overwritten next episode
+            bestBoards = currentBoards;
+            bestBoardLastMove = result.lastMove;
+            bestBoardlastMoveReason = result.reason;
             haveBest = true;
         }
     }
 
     for (const Board &b : bestBoards)
         Logger::board() << b;
+
+    if (!bestBoards.empty()) {
+        Logger::log() << agent.logDecision(bestBoards[bestBoards.size() - 1],
+                                           bestBoardLastMove,
+                                           EpisodeResult::reasonToString(bestBoardlastMoveReason));
+    }
 
     if (singleTestRun) {
         Logger::RUN_DONE() << "Test run: "

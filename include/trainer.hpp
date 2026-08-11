@@ -33,8 +33,19 @@ public:
     };
 
     struct EpisodeResult {
-        unsigned steps = 0;
-        unsigned length = 0;
+        enum class EndReason { Death, MaxSteps, NoFoodTimeout };
+        inline static std::string reasonToString(EndReason reason) {
+            switch (reason) {
+            case Trainer::EpisodeResult::EndReason::Death: return "death";
+            case Trainer::EpisodeResult::EndReason::MaxSteps: return "max_steps";
+            case Trainer::EpisodeResult::EndReason::NoFoodTimeout: return "no_food_timeout";
+            }
+            return "unknown";
+        }
+        unsigned steps;
+        unsigned length;
+        Move lastMove;
+        EndReason reason;
     };
 
     struct EpochStats {
@@ -89,5 +100,4 @@ public:
     void updateConfig(const Config &config);
 
     std::vector<Board> currentBoards;
-    std::vector<Board> bestBoards;
 };

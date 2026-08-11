@@ -34,7 +34,7 @@ public:
 
     Move chooseAction(const Vision & vision);
     Move chooseActionNoUpdate(const Vision & vision);
-    std::string logDecision(const Vision& vision, Move chosen);
+    std::string logDecision(const Vision& vision, Move chosen, const std::string &reason) const;
 
     void updateQtable(const Vision &vision, Move move, float reward, const Vision &next_vision);
 
@@ -45,23 +45,9 @@ public:
     std::string serialiseQTable() const;
     void parseQTable(const std::string& encoded);
 
-private:
     std::array<float, 4>& getOrInsertQ(const Vision &v);
     float& getOrInsertRay(const std::string &key);
     float getRayValue(const std::string &key) const;
-
-    std::optional<std::array<float, 4>> getQ(const Vision &v) const {
-        auto it = q_table.find(state(v));
-        if (it == q_table.end()) return std::nullopt;
-        return it->second;
-    }
-
-    std::array<std::string, 4> rayKeysByMove(const Vision &v) const {
-        std::array<std::string, 4> keys;
-        keys[static_cast<size_t>(Move::Up)]    = rayState(v._north);
-        keys[static_cast<size_t>(Move::Right)] = rayState(v._east);
-        keys[static_cast<size_t>(Move::Down)]  = rayState(v._south);
-        keys[static_cast<size_t>(Move::Left)]  = rayState(v._west);
-        return keys;
-    }
+    std::array<float, 4> getQValue(const Vision &v) const;
+    std::array<std::string, 4> rayKeysByMove(const Vision &v) const;
 };
