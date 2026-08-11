@@ -17,6 +17,7 @@ public:
         unsigned MAX_STEPS = 2000;
         unsigned board_x = 10;
         unsigned board_y = 10;
+        unsigned ai_runs = 1;
 
         float alpha = 0.4f;
         float gamma = 0.9f;
@@ -90,8 +91,10 @@ public:
     Trainer(const Config &config);
 
     void AIplay();
+    void AIplayBatch(unsigned runs);
     void train();
     EpisodeResult trainEpisode(bool log);
+    EpisodeResult playEpisodeNoUpdate();
 
     float reward(MoveRes moveRes);
 

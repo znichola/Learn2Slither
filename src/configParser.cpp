@@ -37,6 +37,7 @@ Trainer::Config parseConfig(const std::string &configStr) {
         else if (key == "frame_time_ms") config.frame_time_ms = static_cast<unsigned>(value);
         else if (key == "board_x") config.board_x = static_cast<unsigned>(value);
         else if (key == "board_y") config.board_y = static_cast<unsigned>(value);
+        else if (key == "ai_runs") config.ai_runs = static_cast<unsigned>(value);
 
         else if (key == "alpha") config.alpha = value;
         else if (key == "gamma") config.gamma = value;
@@ -69,6 +70,7 @@ std::string serialiseConfig(const Trainer::Config &config) {
         << "\"frame_time_ms\":" << config.frame_time_ms << ","
         << "\"board_x\":" << config.board_x << ","
         << "\"board_y\":" << config.board_y << ","
+        << "\"ai_runs\":" << config.ai_runs << ","
 
         << "\"alpha\":" << config.alpha << ","
         << "\"gamma\":" << config.gamma << ","

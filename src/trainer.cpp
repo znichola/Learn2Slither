@@ -55,29 +55,28 @@ void Trainer::updateConfig(const Config &config) {
         });
 }
 
-void Trainer::AIplay() {
+Trainer::EpisodeResult Trainer::playEpisodeNoUpdate() {
     Board board = pipe.genBoard(agent.rng());
+
+    currentBoards.clear();
+    currentBoards.push_back(board);
 
     unsigned step = 0;
 
-    Logger::board() << board;
-
     const int maxStepsSinceEat = config.MAX_STEPS / 10;
     int stepsSinceEat = 0;
-
-    Vision lastVision(board);
     Move lastMove = Move::Up;
     EpisodeResult::EndReason reason = EpisodeResult::EndReason::MaxSteps;
 
     for (; step < config.MAX_STEPS; step++) {
         Vision vision(board);
         Move action = agent.chooseActionNoUpdate(vision);
-        lastVision = vision;
         lastMove = action;
 
         Board next_board = board.doMove(action, agent.rng());
 
         if (next_board.moveRes == MoveRes::Death) {
+            currentBoards.push_back(next_board);
             reason = EpisodeResult::EndReason::Death;
             break;
         }
@@ -86,24 +85,83 @@ void Trainer::AIplay() {
             stepsSinceEat = 0;
         else
             stepsSinceEat++;
+
+        board = next_board;
+        currentBoards.push_back(board);
+
         if (stepsSinceEat >= maxStepsSinceEat) {
             reason = EpisodeResult::EndReason::NoFoodTimeout;
             break;
         }
-
-        board = next_board;
-
-        Logger::board() << board;
     }
 
-    if (step != 0)
-        Logger::log() << agent.logDecision(lastVision, lastMove, EpisodeResult::reasonToString(reason));
+    return EpisodeResult{ step, board.snakeLength(), lastMove, reason };
+}
+
+void Trainer::AIplay() {
+    EpisodeResult result = playEpisodeNoUpdate();
+
+    for (const Board &b : currentBoards)
+        Logger::board() << b;
+
+    if (result.steps != 0)
+        Logger::log() << agent.logDecision(currentBoards[currentBoards.size() - 1], result.lastMove,
+                                           EpisodeResult::reasonToString(result.reason));
 
     Logger::RUN_DONE() << "AI"
-                << " Steps " << step
-                << " Length " << board._snake.size()
+                << " Steps " << result.steps
+                << " Length " << result.length
                 << " qtable " << agent.q_table.size()
                 ;
+}
+
+void Trainer::AIplayBatch(unsigned runs) {
+    EpochStats stats;
+    std::vector<Board> bestBoards;
+    Move bestBoardLastMove = Move::Up;
+    EpisodeResult::EndReason bestBoardLastMoveReason = EpisodeResult::EndReason::MaxSteps;
+    unsigned bestLength = 0;
+    bool haveBest = false;
+
+    unsigned deaths = 0, maxStepsHit = 0, timeouts = 0;
+
+    for (unsigned i = 0; i < runs; ++i) {
+        EpisodeResult result = playEpisodeNoUpdate();
+
+        stats.add(result.length, result.steps);
+
+        switch (result.reason) {
+            case EpisodeResult::EndReason::Death:         deaths++;     break;
+            case EpisodeResult::EndReason::MaxSteps:      maxStepsHit++; break;
+            case EpisodeResult::EndReason::NoFoodTimeout: timeouts++;   break;
+        }
+
+        if (!haveBest || result.length > bestLength) {
+            bestLength = result.length;
+            bestBoards = currentBoards;
+            bestBoardLastMove = result.lastMove;
+            bestBoardLastMoveReason = result.reason;
+            haveBest = true;
+        }
+    }
+
+    for (const Board &b : bestBoards)
+        Logger::board() << b;
+
+    if (!bestBoards.empty()) {
+        Logger::log() << agent.logDecision(bestBoards[bestBoards.size() - 1], bestBoardLastMove,
+                                           EpisodeResult::reasonToString(bestBoardLastMoveReason));
+    }
+
+    Logger::RUN_DONE() << "AI batch: " << runs << " runs"
+        << std::fixed << std::setprecision(2)
+        << " | length " << stats.minLength << "to" << stats.maxLength
+        << " mean:" << stats.meanLength << " stddev:" << stats.stddevLength()
+        << " | steps:" << stats.minSteps << "to" << stats.maxSteps
+        << " mean:" << stats.meanSteps << " stddev:" << stats.stddevSteps()
+        << " | died:" << deaths << " max_steps:" << maxStepsHit << " timeout:" << timeouts
+        << " | qtable " << agent.q_table.size()
+        << " | Showing best run: length:" << bestLength << " steps: " << bestBoards.size();
 }
 
 Trainer::EpisodeResult Trainer::trainEpisode(bool log) {

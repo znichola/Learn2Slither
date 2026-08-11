@@ -18,6 +18,7 @@ type ConfigField
     | FrameTime
     | BoardX
     | BoardY
+    | AiRuns
     | Alpha
     | Gamma
     | Epsilon
@@ -38,6 +39,7 @@ type alias Config =
     , frameTimeMs : Field Int
     , boardX : Field Int
     , boardY : Field Int
+    , aiRuns : Field Int
     , alpha : Field Float
     , gamma : Field Float
     , epsilon : Field Float
@@ -304,6 +306,9 @@ updateConfig field str config =
         BoardY ->
             { config | boardY = updateFieldInt str config.boardY }
 
+        AiRuns ->
+            { config | aiRuns = updateFieldInt str config.aiRuns }
+
         Alpha ->
             { config | alpha = updateFieldFloat str config.alpha }
 
@@ -351,6 +356,7 @@ encodeConfig config =
         , ( "frame_time_ms", Encode.int (getField config.frameTimeMs) )
         , ( "board_x", Encode.int (getField config.boardX) )
         , ( "board_y", Encode.int (getField config.boardY) )
+        , ( "ai_runs", Encode.int (getField config.aiRuns) )
         , ( "alpha", Encode.float (getField config.alpha) )
         , ( "gamma", Encode.float (getField config.gamma) )
         , ( "epsilon", Encode.float (getField config.epsilon) )
@@ -399,6 +405,7 @@ configDecoder =
         |> required "frame_time_ms" (Decode.int |> Decode.map fieldInt)
         |> required "board_x" (Decode.int |> Decode.map fieldInt)
         |> required "board_y" (Decode.int |> Decode.map fieldInt)
+        |> optional "ai_runs" (Decode.int |> Decode.map fieldInt) (fieldInt 1)
         |> required "alpha" (Decode.float |> Decode.map fieldFloat)
         |> required "gamma" (Decode.float |> Decode.map fieldFloat)
         |> required "epsilon" (Decode.float |> Decode.map fieldFloat)
