@@ -86,7 +86,12 @@ static void handle(const Reader::AI& m, AppState& state) {
     state.trainer.agent.epsilon = state.trainer.config.epsilon_min;
     Logger::log() << "Starting AI play mode, with latest trained model, with an exploration rate of "
         << state.trainer.agent.epsilon << " (uses epsilonMin)";
-    state.trainer.AIplay();
+
+    if (state.trainer.config.ai_runs <= 1) {
+        state.trainer.AIplay();
+    } else {
+        state.trainer.AIplayBatch(state.trainer.config.ai_runs);
+    }
 }
 
 static void handle(const Reader::Manual& m, AppState& state) {
@@ -110,6 +115,7 @@ static void handle(const Reader::Manual& m, AppState& state) {
 static void handle(const Reader::Step& m, AppState& state) {
     if (m.content == "Toggle snake vision") {
         Board::toggleSnakeVision();
+        state.board = state.trainer.pipe.genBoard(state.rng());
         Logger::board() << state.board;
         return ;
     }

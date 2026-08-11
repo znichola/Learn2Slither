@@ -79,6 +79,7 @@ defaultConfig =
     , frameTimeMs = fieldInt 30 |> updateFieldHint "During playback the delay between frames in ms."
     , boardX = fieldInt 10
     , boardY = fieldInt 10
+    , aiRuns = fieldInt 1 |> updateFieldHint "Number of AI play episodes to run. 1 animates the run live; >1 skips animation and reports aggregate stats, replaying only the best run."
     , alpha = fieldFloat 0.1 |> updateFieldHint "Learning rate. When lower, it's slower but more stable. (0.0 - 1.0)"
     , gamma = fieldFloat 0.995 |> updateFieldHint "Discount factor for future rewards. When higher, the model prioritises future rewards more, but too high and the snake may loop to stay alive rather than risk seeking food. (0.0 - 1.0)"
     , epsilon = fieldFloat 0.8 |> updateFieldHint "Exploration rate. At 1.0 it will always take random actions. (0.0 - 1.0)"
@@ -426,6 +427,7 @@ viewBoardOptions model =
         [ div [] [ text "Board Options" ]
         , button [ class "option-btn", onClick ToggleSnakeVision ] [ text "Toggle snake vision" ]
         , viewIntField "Frame Time (ms)" FrameTime model.config.frameTimeMs UpdateConfig
+        , viewIntField "# AI Runs" AiRuns model.config.aiRuns UpdateConfig
         , div [ class "option-item qtable-stat" ] [ text ("Q-table size: " ++ String.fromInt model.qtableSize) ]
         ]
 
