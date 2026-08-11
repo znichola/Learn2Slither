@@ -125,36 +125,54 @@ namespace State {
         res.reserve(3);
 
         size_t firstIdx = ray.size();
+        size_t greenIdx = ray.size();
+        size_t redIdx = ray.size();
         for (size_t i = 0; i < ray.size(); ++i) {
-            if (ray[i] != Board::Cell::Empty) {
+            if (firstIdx == ray.size() && ray[i] != Board::Cell::Empty) {
                 firstIdx = i;
-                break;
+            } else if (greenIdx == ray.size() && ray[i] == Board::Cell::Green) {
+                greenIdx = i;
+            } else if (redIdx == ray.size() && ray[i] == Board::Cell::Red) {
+                redIdx = i;
             }
         }
 
         if (firstIdx == ray.size()) {
             res += '4';
-            res += Board::mapping[static_cast<int>(Board::Cell::Empty)];
-            res += Board::mapping[static_cast<int>(Board::Cell::Empty)];
+            res += map(Board::Cell::Empty);
+            res += map(Board::Cell::Empty);
             return res;
         }
 
         int dist = static_cast<int>(firstIdx) + 1;
         if (dist > 4) dist = 4;
-        res += static_cast<char>('0' + dist);
-        res += Board::mapping[static_cast<int>(ray[firstIdx])];
 
-        size_t nextIdx = ray.size();
-        for (size_t i = firstIdx + 1; i < ray.size(); ++i) {
-            if (ray[i] != Board::Cell::Empty) {
-                nextIdx = i;
-                break;
+        res += static_cast<char>('0' + dist);
+
+        const Board::Cell closest = ray[firstIdx];
+        res += map(closest);
+
+        if (closest == Board::Cell::Green) {
+            if (redIdx != ray.size()) {
+                res += map(Board::Cell::Red);
+            } else {
+                res += map(Board::Cell::Wall);
+            } 
+        } else if (closest == Board::Cell::Red) {
+            if (greenIdx != ray.size()) {
+                res += map(Board::Cell::Green);
+            } else {
+                res += map(Board::Cell::Wall);
+            }
+        } else {
+            if (greenIdx != ray.size()) {
+                res += map(Board::Cell::Green);
+            } else if (redIdx != ray.size()) {
+                res += map(Board::Cell::Red);
+            } else {
+                res += map(closest);
             }
         }
-
-        res += (nextIdx != ray.size())
-            ? Board::mapping[static_cast<int>(ray[nextIdx])]
-            : Board::mapping[static_cast<int>(ray[firstIdx])];
 
         return res;
     }
