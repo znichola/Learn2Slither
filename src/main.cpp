@@ -81,8 +81,10 @@ static void handle(const Reader::ResumeTrain& m, AppState& state) {
 }
 
 static void handle(const Reader::AI& m, AppState& state) {
-    state.trainer.agent.epsilon = std::stof(m.content);
-    Logger::log() << "Starting AI play mode, with latest trained model, with an exploration rate of " 
+    Trainer::Config config = parseConfig(m.content);
+    state.trainer.updateConfig(config);
+    state.trainer.agent.epsilon = state.trainer.config.epsilon_min;
+    Logger::log() << "Starting AI play mode, with latest trained model, with an exploration rate of "
         << state.trainer.agent.epsilon << " (uses epsilonMin)";
     state.trainer.AIplay();
 }
