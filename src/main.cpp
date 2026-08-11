@@ -194,11 +194,7 @@ static void handle(const Reader::LoadAgent& m, AppState& state) {
     const std::string agentConfig = content.substr(configPos + 7, qtablePos - (configPos + 7));
     const std::string agentQtable = content.substr(qtablePos + 7);
 
-    state.trainer.config = parseConfig(agentConfig);
-    
-    state.trainer.agent.stateInit = state.trainer.config.stateInit;
-    state.trainer.agent.reward_death = state.trainer.config.reward_death;
-
+    state.trainer = Trainer(parseConfig(agentConfig));
     state.trainer.agent.parseQTable(agentQtable);
     state.trainer.agent.epsilon = state.trainer.config.epsilon_min;
 
