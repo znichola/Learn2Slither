@@ -256,6 +256,11 @@ namespace State {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Board& b) {
+    if (b.lastMove.has_value())
+        os << b.lastMove.value();
+    else
+        os << "INIT";
+    os << "\n";
     if (b.snakeVision) {
         os << Vision(b);
     } else {

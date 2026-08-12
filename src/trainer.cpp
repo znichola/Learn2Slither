@@ -2,6 +2,7 @@
 #include "environment.hpp"
 #include "interpreter.hpp"
 #include "agent.hpp"
+#include "configParser.hpp"
 
 #include "logger.hpp"
 #include <iomanip>
@@ -34,7 +35,7 @@ void Trainer::updateConfig(const Config &config) {
     this->config = config;
 
     if (oldStateFn != this->config.stateFn) {
-        Logger::error() << "Refusing to change state function on existing agent";
+        Logger::error() << "Refusing to change state function on an existing agent, it remains: " << State::serialise(oldStateFn);
         this->config.stateFn = oldStateFn;
     }
 

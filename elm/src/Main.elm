@@ -429,14 +429,7 @@ viewBoardOptions model =
         , viewIntField "Frame Time (ms)" FrameTime model.config.frameTimeMs UpdateConfig
         , viewIntField "# AI Runs" AiRuns model.config.aiRuns UpdateConfig
         , div [ class "option-item qtable-stat" ] [ text ("Q-table size: " ++ String.fromInt model.qtableSize) ]
-        ]
-
-
-viewStatusDetails : Model -> Html Msg
-viewStatusDetails model =
-    div [ class "status-details" ]
-        [ button [ onClick ToggleSnakeVision ] [ text "toggle snake vision" ]
-        , div [] [ text ("Qtable size: " ++ String.fromInt model.qtableSize) ]
+        , div [ class "option-item " ] [ text ("Last move: " ++ Maybe.withDefault "-" (Maybe.map .lastMove model.board)) ]
         ]
 
 

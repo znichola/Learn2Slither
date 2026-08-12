@@ -9,7 +9,9 @@ import Html.Attributes exposing (class)
 
 
 type alias Board =
-    { rows : List (List Cell) }
+    { rows : List (List Cell)
+    , lastMove : String
+    }
 
 
 type Cell
@@ -77,17 +79,20 @@ viewCell cell =
 parseBoard : String -> Maybe Board
 parseBoard content =
     let
-        rows =
+        lines =
             content
                 |> String.lines
                 |> List.filter (not << String.isEmpty)
-                |> List.map parseLine
     in
-    if List.isEmpty rows then
-        Nothing
+    case lines of
+        lastMove :: boardLines ->
+            Just
+                { lastMove = lastMove
+                , rows = List.map parseLine boardLines
+                }
 
-    else
-        Just { rows = rows }
+        [] ->
+            Nothing
 
 
 parseLine : String -> List Cell

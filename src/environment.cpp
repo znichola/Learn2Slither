@@ -154,6 +154,7 @@ Board Board::doMove(Move m, unsigned seed) const {
     if (_snake.size() <= 0) throw std::runtime_error("Snake must have length");
 
     Board b = *this;
+    b.lastMove = m;
 
     unsigned head = b._snake.back();
     unsigned tail = b._snake.front();
@@ -193,6 +194,7 @@ Board Board::doMove(Move m, unsigned seed) const {
     if (b.moveRes == MoveRes::Death) {
         auto rb = *this;
         rb.moveRes = MoveRes::Death;
+        rb.lastMove = m;
         return rb;
     } else if (b.moveRes == MoveRes::Red) {
         auto rb = b.randomSpawn(Cell::Red, seed);

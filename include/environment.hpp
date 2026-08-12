@@ -4,6 +4,7 @@
 #include <ostream>
 #include <utility>
 #include <variant>
+#include <optional>
 
 #include "move.hpp"
 
@@ -13,6 +14,7 @@ public:
     enum class Cell {Empty=0, Wall=1, Snake=2, Green=3, Red=4, Head=5};
     typedef std::pair<Board, unsigned> Op;
 
+    std::optional<Move> lastMove = std::nullopt;
     unsigned int x_dim = 10;
     unsigned int y_dim = 10;
 
@@ -21,7 +23,7 @@ public:
     std::vector<Cell> _grid;
     std::vector<unsigned> _snake;
 
-    Board(unsigned x, unsigned y);
+    Board(unsigned int x, unsigned int y);
     Board(const std::string &board);
 
     // Board& operator=(Board &b) const = default;
