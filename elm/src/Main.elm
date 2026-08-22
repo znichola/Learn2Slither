@@ -4,9 +4,9 @@ import App.Board exposing (..)
 import App.Config exposing (..)
 import Array exposing (Array)
 import Browser
-import Html exposing (Html, button, div, h3, text)
-import Html.Attributes exposing (class)
-import Html.Events exposing (onClick, preventDefaultOn)
+import Html exposing (Html, button, div, h3, input, span, text)
+import Html.Attributes exposing (class, disabled, type_, value)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Time
@@ -33,6 +33,7 @@ type alias Run =
     , message : String
     , frames : Array Board
     , playbackIndex : Int
+    , paused : Bool
     }
 
 
@@ -164,6 +165,8 @@ type Msg
     | SendSaveAgent
     | SendLoadAgent
     | ReplayRun Run
+    | ToggleReplayPause
+    | SetReplayIndex Int
 
 
 type alias WasmMessage =
@@ -250,6 +253,7 @@ handleRunDone rawMessage model =
                         , message = rawMessage
                         , frames = framesArray
                         , playbackIndex = 0
+                        , paused = False
                         }
                 in
                 if String.contains "GameOver" rawMessage then
@@ -363,7 +367,7 @@ update msg model =
             )
 
         ReplayRun run ->
-            ( { model | board = Array.get 0 run.frames, replayingRun = Just { run | playbackIndex = 0 } }, Cmd.none )
+            ( { model | board = Array.get 0 run.frames, replayingRun = Just { run | playbackIndex = 0, paused = False } }, Cmd.none )
 
         ReplayTick _ ->
             case model.replayingRun of
@@ -386,10 +390,35 @@ update msg model =
                                     Nothing ->
                                         Cmd.none
                         in
-                        ( { model | replayingRun = Nothing }, cmd )
+                        ( { model | replayingRun = Just { run | paused = True } }, cmd )
 
                     else
                         ( { model | board = Array.get nextIndex run.frames, replayingRun = Just { run | playbackIndex = nextIndex } }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        ToggleReplayPause ->
+            case model.replayingRun of
+                Just run ->
+                    ( { model | replayingRun = Just { run | paused = not run.paused } }, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        SetReplayIndex index ->
+            case model.replayingRun of
+                Just run ->
+                    let
+                        clampedIndex =
+                            clamp 0 (Array.length run.frames - 1) index
+                    in
+                    ( { model
+                        | board = Array.get clampedIndex run.frames
+                        , replayingRun = Just { run | playbackIndex = clampedIndex, paused = True }
+                      }
+                    , Cmd.none
+                    )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -407,6 +436,7 @@ view model =
             , div [ class "inner-board" ]
                 [ div [ class "board-column" ]
                     [ viewBoard model.board
+                    , viewReplayScrubber model.replayingRun
                     , viewControls
                     ]
                 , viewBoardOptions model
@@ -431,6 +461,53 @@ viewBoardOptions model =
         , div [ class "option-item qtable-stat" ] [ text ("Q-table size: " ++ String.fromInt model.qtableSize) ]
         , div [ class "option-item " ] [ text ("Last move: " ++ Maybe.withDefault "-" (Maybe.map .lastMove model.board)) ]
         ]
+
+
+viewReplayScrubber : Maybe Run -> Html Msg
+viewReplayScrubber maybeRun =
+    case maybeRun of
+        Nothing ->
+            text ""
+
+        Just run ->
+            let
+                lastIndex =
+                    max 0 (Array.length run.frames - 1)
+            in
+            div [ class "replay-scrubber" ]
+                [ button [ onClick ToggleReplayPause ]
+                    [ text
+                        (if run.paused then
+                            "▶"
+
+                         else
+                            "⏸"
+                        )
+                    ]
+                , button
+                    [ onClick (SetReplayIndex (run.playbackIndex - 1))
+                    , disabled (run.playbackIndex <= 0)
+                    ]
+                    [ text "⏮" ]
+                , input
+                    [ type_ "range"
+                    , Html.Attributes.min "0"
+                    , Html.Attributes.max (String.fromInt lastIndex)
+                    , value (String.fromInt run.playbackIndex)
+                    , onInput
+                        (\str ->
+                            SetReplayIndex (String.toInt str |> Maybe.withDefault run.playbackIndex)
+                        )
+                    ]
+                    []
+                , button
+                    [ onClick (SetReplayIndex (run.playbackIndex + 1))
+                    , disabled (run.playbackIndex >= lastIndex)
+                    ]
+                    [ text "⏭" ]
+                , span [ class "replay-step-count" ]
+                    [ text (String.fromInt (run.playbackIndex + 1) ++ " / " ++ String.fromInt (lastIndex + 1)) ]
+                ]
 
 
 viewControls : Html Msg
@@ -564,8 +641,12 @@ subscriptions model =
     Sub.batch
         [ receiveFromJs GotWasmMessage
         , case model.replayingRun of
-            Just _ ->
-                Time.every (toFloat (getField model.config.frameTimeMs)) ReplayTick
+            Just run ->
+                if run.paused then
+                    Sub.none
+
+                else
+                    Time.every (toFloat (getField model.config.frameTimeMs)) ReplayTick
 
             Nothing ->
                 Sub.none
